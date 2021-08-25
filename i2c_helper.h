@@ -1,3 +1,5 @@
+#pragma once
+
 #include <sys/ioctl.h>				//change slave
 #include <linux/i2c-dev.h>		
 #include <unistd.h>				//Needed for I2C port
