@@ -20,7 +20,7 @@ int setup_i2C()
 }
 
 //make sure recv is big enough!
-int communicate_I2C(uint8_t device_address,bool write, uint8_t register_address, uint8_t* recv, int8_t num_of_bytes)
+int communicate_I2C(uint8_t device_address,bool write_comm, uint8_t register_address, uint8_t* recv, int8_t num_of_bytes)
 {
 	const std::lock_guard<std::mutex> lock(i2c_mutex);
 
@@ -36,13 +36,13 @@ int communicate_I2C(uint8_t device_address,bool write, uint8_t register_address,
 		printf("Device failed to ACK the register address %i\n",address);
 		return -1;
 	}
-	if(write == false)
+	if(write_comm == false)
 		if(read(file_i2c_handle,recv,num_of_bytes) != num_of_bytes)
 		{
 			printf("Device failed to ACK the read -- maybe you are reading invalid register?\n");
 			return -2;
 		}
-	if(write==true)
+	if(write_comm==true)
 		if(write(file_i2c_handle,recv,num_of_bytes) != num_of_bytes)
 		{
 			printf("Device failed to ACK the write -- maybe you are reading invalid register?\n");
