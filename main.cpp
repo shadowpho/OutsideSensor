@@ -2,8 +2,15 @@
 #include <stdlib.h>
 
 #include "HDC2080.h"
+#include "i2c_helper.h"
 
 int main(){
+	if(setup_i2C()!=0)
+	{
+		printf("Failed to open I2c file\n");
+		return -1;
+	}
+
     float temperature, humidity; 
 
 	if(setup_hdc2080() != 0 ) return 1; 

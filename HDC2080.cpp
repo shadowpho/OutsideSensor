@@ -1,18 +1,15 @@
 #include <stdio.h>
 #include <time.h>
-#include "HDC2080.h"
-#include <unistd.h>				//Needed for I2C port
-#include <fcntl.h>				//
-		
-
 #include <errno.h>
 #include <string.h>
+#include <cassert>
+
+#include "HDC2080.h"
+#include "i2c_helper.h"
+
 
 #define MFCT_ID 0x5449
 #define DEVICE_ID 0x07D0
-
-static int file_i2c_handle =0;
-
 
 //device address
 #define HDC2080_ADDRESS 0x40
@@ -30,21 +27,49 @@ static int file_i2c_handle =0;
 #define HDC2080_RESET_HEATER_ENABLE           (0x8)
 #define HDC2080_CONFIG_GO        (0x1)
 
-#define NANO_MS_MULTIPLIER  1000000L;                // 1 millisecond = 1,000,000 Nanoseconds
-const int64_t INTERVAL_MS = NANO_MS_MULTIPLIER;
-
+#define READ_HDC2080(register_address, recv,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,false,register_address, recv, num_of_bytes))
+#define WRITE_HDC2080(register_address, recv,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,true,register_address, recv, num_of_bytes))
 
 
 //reset and block!
 int setup_hdc2080()
 {
-
+    //CHECK THAT WE ARE TALKING TO RIGHT DEVICE
+	uint16_t response;
+	READ_HDC2080(HDC2080_MANUFACTURERID_REGISTER,&response,2);
+	if(response != MFCT_ID)
+	{
+		printf("Wrong MFCT ID. Wrong device?\n"); return -4;
+	}	
+	
+	READ_HDC2080(HDC2080_DEVICEID_REGISTER,&response,2);
+	if(response != DEVICE_ID)
+	{
+		printf("Wrong device ID. Wrong device?\n"); return -4;
+	}
+	response = HDC2080_RESET_RESET_BIT;//set high bit enable to reset. 
+	WRITE_HDC2080(HDC2080_RESET_REGISTER,response, 1);
+    
     return 0;
 }
 
 //blocking read!
 int read_from_hdc2080(float* temp, float *humid)
 {
+    uint8_t buff[2] = {};
+	buff[0] = HDC2080_CONFIG_GO; 
+	WRITE_HDC2080(HDC2080_CONFIG_REGISTER, buff, 1);
+	
+	//sleep for 20ms to let it finish measuring
+	nanosleep((const struct timespec[]){{0, 20*INTERVAL_MS}}, NULL);
+	
+	uint16_t temp_raw, humidity_raw;
 
+	READ_HDC2080(HDC2080_TEMPERATURE_REGISTER,&temp_raw,2 );
+    READ_HDC2080(HDC2080_HUMIDITY_REGISTER,&humidity_raw,2 );
+
+
+	*temperature = (temp_raw/ 65536.0)  * 165.0-40.62;
+    *humidity = (humidity_raw/65536.0) * 100.0;	
     return 0;
 }
