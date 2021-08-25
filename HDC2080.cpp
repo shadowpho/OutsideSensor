@@ -27,8 +27,8 @@
 #define HDC2080_RESET_HEATER_ENABLE           (0x8)
 #define HDC2080_CONFIG_GO        (0x1)
 
-#define READ_HDC2080(register_address, recv,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,false,register_address, recv, num_of_bytes))
-#define WRITE_HDC2080(register_address, recv,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,true,register_address, recv, num_of_bytes))
+#define READ_HDC2080(register_address, recv,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,false,register_address,(uint8_t*) recv, num_of_bytes))
+#define WRITE_HDC2080(register_address, recv,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,true,register_address,(uint8_t*) recv, num_of_bytes))
 
 
 //reset and block!
@@ -69,7 +69,7 @@ int read_from_hdc2080(float* temp, float *humid)
     READ_HDC2080(HDC2080_HUMIDITY_REGISTER,&humidity_raw,2 );
 
 
-	*temperature = (temp_raw/ 65536.0)  * 165.0-40.62;
-    *humidity = (humidity_raw/65536.0) * 100.0;	
+	*temp = (temp_raw/ 65536.0)  * 165.0-40.62;
+    *humid = (humidity_raw/65536.0) * 100.0;	
     return 0;
 }
