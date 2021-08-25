@@ -33,7 +33,7 @@ int communicate_I2C(uint8_t device_address,bool write_comm, uint8_t register_add
 	}
 	if(write(file_i2c_handle, &register_address, 1) != 1)
 	{
-		printf("Device failed to ACK the register address %i\n",address);
+		printf("Device failed to ACK the register address %i\n",register_address);
 		return -1;
 	}
 	if(write_comm == false)
