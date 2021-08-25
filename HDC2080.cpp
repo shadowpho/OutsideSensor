@@ -7,6 +7,7 @@
 #include "HDC2080.h"
 #include "i2c_helper.h"
 
+#define INTERVAL_MS 1000000
 
 #define MFCT_ID 0x5449
 #define DEVICE_ID 0x07D0
