@@ -4,6 +4,8 @@
 #include <fcntl.h>	
 #include <mutex>
 
+#include <errno.h>
+
 static int file_i2c_handle =0;
 static std::mutex i2c_mutex;
 
@@ -46,6 +48,7 @@ int communicate_I2C(uint8_t device_address,bool write_comm, uint8_t register_add
 	if(write_comm==true)
 		if((ret=write(file_i2c_handle,recv_buff,num_of_bytes)) != num_of_bytes)
 		{
+            printf("%s\n",strerror(errno));
 			printf("Device failed to ACK the write -- maybe you are reading invalid register, output:%i ?\n",ret);
 			return -4;
 		}
