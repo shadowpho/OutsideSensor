@@ -49,7 +49,7 @@ int setup_hdc2080()
 		printf("Wrong device ID. Wrong device?\n"); return -4;
 	}
 	response = HDC2080_RESET_RESET_BIT;//set high bit enable to reset. 
-	WRITE_HDC2080(HDC2080_RESET_REGISTER,response, 1);
+	WRITE_HDC2080(HDC2080_RESET_REGISTER,&response, 1);
     
     return 0;
 }
