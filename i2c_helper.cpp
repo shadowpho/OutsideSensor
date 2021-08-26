@@ -24,7 +24,7 @@ int communicate_I2C(uint8_t device_address,bool write_comm, uint8_t register_add
 {
 	const std::lock_guard<std::mutex> lock(i2c_mutex);
 
-    if(recv==nullptr) abort();
+    if(recv_buff==nullptr) abort();
 
 	if (ioctl(file_i2c_handle, I2C_SLAVE,device_address ) < 0)
 	{

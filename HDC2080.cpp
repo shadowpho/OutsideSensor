@@ -28,8 +28,8 @@
 #define HDC2080_RESET_HEATER_ENABLE           (0x8)
 #define HDC2080_CONFIG_GO        (0x1)
 
-#define READ_HDC2080(register_address, recv,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,false,register_address,(uint8_t*) recv, num_of_bytes))
-#define WRITE_HDC2080(register_address, recv,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,true,register_address,(uint8_t*) recv, num_of_bytes))
+#define READ_HDC2080(register_address, recv_buff,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,false,register_address,(uint8_t*) recv_buff, num_of_bytes))
+#define WRITE_HDC2080(register_address, recv_buff,num_of_bytes ) assert(0==communicate_I2C(HDC2080_ADDRESS,true,register_address,(uint8_t*) recv_buff, num_of_bytes))
 
 
 //reset and block!
