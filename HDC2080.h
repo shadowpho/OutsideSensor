@@ -1,7 +1,5 @@
 #pragma once
 
-#define ADDR 0x40
-
 //reset and block!
 int setup_hdc2080();
 

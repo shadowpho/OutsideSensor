@@ -17,11 +17,11 @@ int main(){
 
 	if(setup_hdc2080() != 0 ) return 1; 
 	printf("HDC2080 identified.\n");
-	if(setup_BMP280() != 0 ) return 2;
+	/*if(setup_BMP280() != 0 ) return 2;
 	printf("BMP280 identified.\n");
 	if(setup_VEML7700() !=0) return 3;
 	printf("VEML7700 identified.\n");
-	
+	*/
 
 
 	if(read_from_hdc2080(&temperature, &humidity)!=0) return 1;
