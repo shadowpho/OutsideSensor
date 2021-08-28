@@ -67,7 +67,7 @@ int setup_VEML7700()
     WRITE_VEML7700(VEML_CONF_REGISTER,buff,2);
     buff[0] = 0x0;
     WRITE_VEML7700(VEML_PS,buff,2);
-    return 1;
+    return 0;
 }
 
 
@@ -81,5 +81,5 @@ int read_from_VEML7700(float* temp, float *pressure)
     sleep_ms(5);
 
     
-    return 1;
+    return 0;
 }

@@ -42,12 +42,12 @@ int setup_BMP280()
     WRITE_BMP280(BMP280_RESET,buff,1);
 
 
-    return 1;
+    return 0;
 }
 
 //blocking read!
 int read_from_BMP280(float* temp, float *pressure)
 {
 
-    return 1;
+    return 0;
 }
