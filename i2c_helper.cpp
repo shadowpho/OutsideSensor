@@ -57,7 +57,7 @@ int communicate_I2C(uint8_t device_address,bool write_comm, uint8_t register_add
 	if(write_comm==true)
     {
         buff[0] = register_address;
-        for(int i=0;i<num_of_bytes;i++)
+        for(int i=0;i<num_of_bytes+1;i++)
             buff[i+1] = recv_buff[i];
 
 		if((ret=write(file_i2c_handle,buff,num_of_bytes)) != num_of_bytes)
