@@ -46,10 +46,10 @@ const int VEML_DELAY_TIME[] = {25+OH_time, 50+OH_time, 100+OH_time, 200+OH_time,
 void VEML_Single_Measurment(float* lux, int8_t gain, int8_t integration)
 {
     uint16_t buff = 0x1;
-    assert(gain<=0);
-    assert(gain>4);
-    assert(integration<-2);
-    assert(integration>3);
+    assert(gain>0);
+    assert(gain<=4);
+    assert(integration>=-2);
+    assert(integration<=3);
 
     WRITE_VEML7700(VEML_CONF_REGISTER, &buff, 2); //SHUT DOWN
 
