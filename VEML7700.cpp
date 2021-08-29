@@ -39,7 +39,7 @@ const uint8_t ALS_INT_VALUE[6] = {0xC, 0x8, 0x0, 0x1, 0x2, 0x3};
 const uint8_t ALS_GAIN_VALUE[5] = {0x0, 0x2, 0x3, 0x0, 0x1};
 
 #define OH_time 40
-const uint8_t VEML_DELAY_TIME[] = {25+OH_time, 50+OH_time, 100+OH_time, 200+OH_time, 400+OH_time, 800+OH_time};
+const int VEML_DELAY_TIME[] = {25+OH_time, 50+OH_time, 100+OH_time, 200+OH_time, 400+OH_time, 800+OH_time};
 
 
 //Use 3,4,1,2 for gain, -2->3 for it...
@@ -62,13 +62,13 @@ void VEML_Single_Measurment(float* lux, int8_t gain, int8_t integration)
     READ_VEML7700(VEML_ALS_Data,&buff,2);
     *lux = (float) buff;
     buff = 0x1; //shutdown
-    WRITE_VEML7700(VEML_CONF_REGISTER,buff,2);
+    WRITE_VEML7700(VEML_CONF_REGISTER,&buff,2);
     switch (gain){
         case 1: *lux*=16;break; //1/8
         case 2: *lux*=8; break; //1/4 
         case 3: *lux*=2; break; //x1
         case 4: break; //x2
-        default:
+        default: break;
     }
     //integration is -2 -> 3.  We turn it to 0->5 (+2)
     //0 = 25ms, 5 = 800ms
