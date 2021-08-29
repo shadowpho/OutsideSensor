@@ -60,7 +60,7 @@ int communicate_I2C(uint8_t device_address,bool write_comm, uint8_t register_add
         for(int i=0;i<num_of_bytes;i++)
             buff[i+1] = recv_buff[i];
 
-		if((ret=write(file_i2c_handle,buff,num_of_bytes+1)) != num_of_bytes)
+		if((ret=write(file_i2c_handle,buff,num_of_bytes+1)) != (num_of_bytes+1))
 		{
             perror("error:");
 			printf("Device failed to ACK the write -- maybe you are reading invalid register, output:%i ?\n",ret);
