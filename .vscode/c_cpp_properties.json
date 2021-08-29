@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.18362.0",
+            "compilerPath": "F:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Tools\\MSVC\\14.26.28801\\bin\\Hostx64\\x64\\cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64"
+        },
+        {
+            "name": "LinuxLOL",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "F:\\Programming\\include",
+                "F:\\Programming\\include\\arm-linux-gnueabihf",
+                "F:\\Programming\\lib\\gcc\\arm-linux-gnueabihf\\10\\include",
+                "F:\\Programming\\include\\C++\\10",
+                "F:\\Programming\\include\\c++\\10\\backward",
+                "F:\\Programming\\include\\arm-linux-gnueabihf\\C++\\10"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "__ARM_PCS_VFP"
+            ],
+            "windowsSdkVersion": "10.0.18362.0",
+            "compilerPath": "",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "linux-gcc-arm"
+        }
+    ],
+    "version": 4
+}
