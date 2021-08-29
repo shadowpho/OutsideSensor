@@ -19,8 +19,6 @@
 #define READ_VEML7700(register_address, recv_buff,num_of_bytes ) assert(0==communicate_I2C(VEML7700_ADDR,false,register_address,(uint8_t*) recv_buff, num_of_bytes))
 #define WRITE_VEML7700(register_address, recv_buff,num_of_bytes ) assert(0==communicate_I2C(VEML7700_ADDR,true,register_address,(uint8_t*) recv_buff, num_of_bytes))
 
-#define sleep_ms(num_of_ms) nanosleep((const struct timespec[]){{0, num_of_ms*INTERVAL_MS}}, NULL)
-
 /* From DS:
 ALS integration time setting IT:
 1100 = 25 ms → -2
@@ -35,29 +33,49 @@ Gain selection G:
 10 = ALS gain x (1/8) → 1
 11 = ALS gain x (1/4) → 2
 */
+//                                0    1     2   3   4   5
 const uint8_t ALS_INT_VALUE[6] = {0xC, 0x8, 0x0, 0x1, 0x2, 0x3};
-const uint8_t ALS_GAIN_VALUE[4] = {0x0, 0x1, 0x2, 0x3};
+//                           GAIN - NA,1(1/8)2(1/4)3(x1)4(x2)
+const uint8_t ALS_GAIN_VALUE[5] = {0x0, 0x2, 0x3, 0x0, 0x1};
+
+#define OH_time 40
+const uint8_t VEML_DELAY_TIME[] = {25+OH_time, 50+OH_time, 100+OH_time, 200+OH_time, 400+OH_time, 800+OH_time};
 
 
-//also kills other settings!!!!
-int enable_VEML7700(bool to_enable)
-{
-    uint16_t rgst_read; 
-    if(to_enable)
-        rgst_read = 0x0; //enable 
-    else
-        rgst_read = 0x1; //shut down
-    WRITE_VEML7700(VEML_CONF_REGISTER,&rgst_read,2);
-    return 0;
-}
 //Use 3,4,1,2 for gain, -2->3 for it...
-void VEML_Single_Measurment(float* lux, uint8_t gain, uint8_t integration)
+void VEML_Single_Measurment(float* lux, int8_t gain, int8_t integration)
 {
-    uint16_t buff = 0x0;
-    enable_VEML7700(false);
-    buff = 
+    uint16_t buff = 0x1;
+    assert(gain<=0);
+    assert(gain>4);
+    assert(integration<-2);
+    assert(integration>3);
 
-    enable_VEML7700(true);
+    WRITE_VEML7700(VEML_CONF_REGISTER, &buff, 2); //SHUT DOWN
+
+    buff = ALS_INT_VALUE[integration+2]<<6 | ALS_GAIN_VALUE[gain]<<11 | 0x1;
+    WRITE_VEML7700(VEML_CONF_REGISTER,&buff,2); //set gain/integration
+    buff &= ~1;
+    WRITE_VEML7700(VEML_CONF_REGISTER,&buff,2); //GOGOGO
+    uint8_t delay_time_veml = VEML_DELAY_TIME[integration+2];
+    nanosleep((const struct timespec[]){{0, delay_time_veml*INTERVAL_MS}}, NULL);
+    READ_VEML7700(VEML_ALS_Data,&buff,2);
+    *lux = (float) buff;
+    buff = 0x1; //shutdown
+    WRITE_VEML7700(VEML_CONF_REGISTER,buff,2);
+    switch (gain){
+        case 1: *lux*=16;break; //1/8
+        case 2: *lux*=8; break; //1/4 
+        case 3: *lux*=2; break; //x1
+        case 4: break; //x2
+        default:
+    }
+    //integration is -2 -> 3.  We turn it to 0->5 (+2)
+    //0 = 25ms, 5 = 800ms
+    //0= *32, 1 = *16... 5=*1
+    //(5-(integration+2)) 
+    *lux *=   2 << (5 - (integration+2));
+    *lux *= 0.0036;
 }
 
 int setup_VEML7700()
@@ -71,15 +89,8 @@ int setup_VEML7700()
 }
 
 
-int read_from_VEML7700(float* temp, float *pressure)
+int read_from_VEML7700(float* lux)
 {
-    enable_VEML7700(false); //turn it off.
-    //configure for first 
-    sleep_ms(5);
-    //enable and wait
-    enable_VEML7700(true);
-    sleep_ms(5);
-
-    
-    return 0;
+   VEML_Single_Measurment(lux,1,0);
+   return 0;
 }
