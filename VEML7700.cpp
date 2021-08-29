@@ -92,6 +92,6 @@ int setup_VEML7700()
 
 int read_from_VEML7700(float* lux)
 {
-   VEML_Single_Measurment(lux,1,0);
+   VEML_Single_Measurment(lux,4,3);
    return 0;
 }
