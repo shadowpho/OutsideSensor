@@ -6,7 +6,9 @@ CC	 = g++
 FLAGS	 = -g3 -c -Wall
 LFLAGS	 = -lpthread
 
-all: $(OBJS)
+all: $(OUT)
+
+$(OUT): $(OBJS)
 	$(CC) -g $(OBJS) -o $(OUT) $(LFLAGS)
 
 main.o: main.cpp
@@ -24,6 +26,8 @@ HDC2080.o: HDC2080.cpp
 i2c_helper.o: i2c_helper.cpp
 	$(CC) $(FLAGS) i2c_helper.cpp 
 
+run: $(OUT)
+	./$(OUT)
 
 clean:
 	rm -f $(OBJS) $(OUT)
