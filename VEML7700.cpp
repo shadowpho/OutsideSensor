@@ -57,7 +57,7 @@ void VEML_Single_Measurment(float* lux, int8_t gain, int8_t integration)
     WRITE_VEML7700(VEML_CONF_REGISTER,&buff,2); //set gain/integration
     buff &= ~1;
     WRITE_VEML7700(VEML_CONF_REGISTER,&buff,2); //GOGOGO
-    uint8_t delay_time_veml = VEML_DELAY_TIME[integration+2];
+    int delay_time_veml = VEML_DELAY_TIME[integration+2];
     const struct timespec remaining = {0,delay_time_veml*INTERVAL_MS};
     nanosleep(&remaining, NULL);
     READ_VEML7700(VEML_ALS_Data,&buff,2);
