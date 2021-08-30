@@ -3,8 +3,10 @@
 #include <unistd.h>				//Needed for I2C port
 #include <fcntl.h>	
 #include <mutex>
+#include <cassert>
 
 #include <errno.h>
+#include <linux/i2c.h>
 
 static int file_i2c_handle =0;
 static std::mutex i2c_mutex;
@@ -22,50 +24,51 @@ int setup_i2C()
 }
 
 //make sure recv is big enough!
+//NOTE: RASP PI DOES NOT SUPPORT I2C_M_NOSTART!!!!!
 int communicate_I2C(uint8_t device_address,bool write_comm, uint8_t register_address, uint8_t* recv_buff, int8_t num_of_bytes)
 {
 	const std::lock_guard<std::mutex> lock(i2c_mutex);
-    int ret=0; //debug
-    uint8_t buff[4]; //xxx sigh
-    if(write_comm == true && num_of_bytes>3) 
+
+    if(write_comm == true && num_of_bytes>6) 
     {  
-        printf("Writeing >3 bytes not supported yet");
+        printf("Writing >6 bytes not supported yet");
         return -9;
     }
+	assert(recv_buff!=nullptr);
 
-    if(recv_buff==nullptr) abort();
+	uint8_t buff[8];
 
-	if (ioctl(file_i2c_handle, I2C_SLAVE,device_address ) < 0)
-	{
-		printf("Failed to acquire bus access and/or talk to slave.\n");
-		return -3;
-	}
-    if(write_comm == false)
-    {
-        if(write(file_i2c_handle, &register_address, 1) != 1)
-        {
-            printf("Device failed to ACK the register address %i\n",register_address);
-            return -1;
-        }
+	buff[0] = register_address;
 
-		if(read(file_i2c_handle,recv_buff,num_of_bytes) != num_of_bytes)
-		{
-			printf("Device failed to ACK the read -- maybe you are reading invalid register?\n");
-			return -2;
-		}
-    }
+	for(int i=0;i<num_of_bytes;i++)
+		buff[i+1] = recv_buff[i];
+
+	struct i2c_msg msgs[2];
+    struct i2c_rdwr_ioctl_data msgset[1];
+
+    msgs[0].addr = device_address;
+    msgs[0].flags = 0; //first byte ALWAYS write
 	if(write_comm==true)
-    {
-        buff[0] = register_address;
-        for(int i=0;i<num_of_bytes;i++)
-            buff[i+1] = recv_buff[i];
+		msgs[0].len = 1+num_of_bytes;
+	else
+    	msgs[0].len = 1;
+    msgs[0].buf = buff;
 
-		if((ret=write(file_i2c_handle,buff,num_of_bytes+1)) != (num_of_bytes+1))
-		{
-            perror("error:");
-			printf("Device failed to ACK the write -- maybe you are reading invalid register, output:%i ?\n",ret);
-			return -4;
-		}
-    } 
+	msgs[1].addr = device_address;
+   	msgs[1].flags = I2C_M_RD; 
+    msgs[1].len = num_of_bytes;
+    msgs[1].buf = recv_buff;
+
+    msgset[0].msgs = msgs;
+	if(write_comm==true)
+		msgset[0].nmsgs = 1;
+	else 
+    	msgset[0].nmsgs = 2;
+
+    if (ioctl(file_i2c_handle, I2C_RDWR, &msgset) < 0) {
+        perror("ioctl(I2C_RDWR) in i2c_comm");
+        return -1;
+    }
+
 	return 0;
 }
