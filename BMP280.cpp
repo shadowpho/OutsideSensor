@@ -62,6 +62,18 @@ int setup_BMP280()
 //blocking read!
 int read_from_BMP280(float *temp, float *pressure)
 {
+    uint8_t buff[3];
 
+    assert(temp!=nullptr);
+    assert(pressure!=nullptr);
+
+    WRITE_BMP280(BMP280_CTRL_MEAS,buff,1);
+    WRITE_BMP280(BMP280_CONFIG,buff,1);
+
+    READ_BMP280(BMP280_STATUS,buff,1);
+
+    READ_BMP280(BMP280_PRES_MSB,buff,3);
+
+    READ_BMP280(BMP280_TEMP_MSB,buff,3);
     return 0;
 }
