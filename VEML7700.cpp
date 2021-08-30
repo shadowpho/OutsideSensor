@@ -61,7 +61,7 @@ void VEML_Single_Measurment(float* lux, int8_t gain, int8_t integration)
     const struct timespec remaining = {0,delay_time_veml*INTERVAL_MS};
     nanosleep(&remaining, NULL);
     READ_VEML7700(VEML_ALS_Data,&buff,2);
-    printf("Test Lux!%i\n",buff);
+    printf("Test Lux! %i\n",buff);
     *lux = (float) buff;
     buff = 0x1; //shutdown
     WRITE_VEML7700(VEML_CONF_REGISTER,&buff,2);

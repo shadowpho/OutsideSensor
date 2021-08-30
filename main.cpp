@@ -24,7 +24,7 @@ int main(){
 	
 	if(read_from_hdc2080(&temperature, &humidity)!=0) return 1;
 	read_from_VEML7700(&lux);
-	printf("{ \"temperature\" : %.1f, \"humidity\" : %.1f, \"lux\" : %.1f}\n", temperature, humidity, lux);
+	printf("{ \"temperature\" : %.1f, \"humidity\" : %.1f, \"lux\" : %.4f}\n", temperature, humidity, lux);
 
     return 0;
 }
