@@ -6,7 +6,7 @@
         {
             "label": "echo",
             "type": "shell",
-            "command": "scp -p ${workspaceFolder}/* pi@raspberrypi2:~/OutsideSensor/ ; ssh pi@raspberrypi2 make run -C OutsideSensor; ",
+            "command": "scp -p ${workspaceFolder}/* pi@raspberrypi2:~/OutsideSensor/ ; ssh pi@raspberrypi2 make -C OutsideSensor/out; ssh pi@raspberrypi2 OutsideSensor/out/OutsideSensor ",
             "group": {
                 "kind": "build",
                 "isDefault": true
