@@ -29,6 +29,15 @@ Gain selection G:
 10 = ALS gain x (1/8) → 1
 11 = ALS gain x (1/4) → 2
 */
+enum VEML_IT_TIME{
+VEML_25MS = -2,
+VEML_50MS = -1,
+VEML_100MS = 0,
+VEML_200MS = 1,
+VEML_400MS = 2,
+VEML_800MS = 3
+};
+
 //                                0    1     2   3   4   5
 const uint8_t ALS_INT_VALUE[6] = {0xC, 0x8, 0x0, 0x1, 0x2, 0x3};
 //                           GAIN - NA,1(1/8)2(1/4)3(x1)4(x2)
@@ -42,6 +51,7 @@ const int VEML_DELAY_TIME[] = {25 + OH_time, 50 + OH_time, 100 + OH_time, 200 + 
 unsigned int VEML_Single_Measurment(float *lux, int8_t gain, int8_t integration)
 {
     uint16_t buff = 0x1;
+    uint16_t als_count = 0;
     assert(gain > 0);
     assert(gain <= 4);
     assert(integration >= -2);
@@ -55,9 +65,9 @@ unsigned int VEML_Single_Measurment(float *lux, int8_t gain, int8_t integration)
     WRITE_VEML7700(VEML_CONF_REGISTER, &buff, 2); //GOGOGO
     int delay_time_veml = VEML_DELAY_TIME[integration + 2];
     sleep_ms(delay_time_veml);
-    READ_VEML7700(VEML_ALS_Data, &buff, 2);
-    printf("Test Lux! %i\n", buff);
-    *lux = (float)buff;
+    READ_VEML7700(VEML_ALS_Data, &als_count, 2);
+    printf("Test Lux! %i\n", als_count);
+    *lux = (float)als_count;
     buff = 0x1; //shutdown
     WRITE_VEML7700(VEML_CONF_REGISTER, &buff, 2);
     switch (gain)
@@ -82,7 +92,7 @@ unsigned int VEML_Single_Measurment(float *lux, int8_t gain, int8_t integration)
     //(5-(integration+2))
     *lux *= 1 << (5 - (integration + 2));
     *lux *= 0.0036;
-    return buff;
+    return als_count;
 }
 
 int setup_VEML7700()
@@ -97,6 +107,39 @@ int setup_VEML7700()
 
 int read_from_VEML7700(float *lux)
 {
-    VEML_Single_Measurment(lux, 4, 3);
+    int gain=1;
+    int integration=0;
+    int ret_count = 0;
+    int loop_limit = 50; 
+
+    do{
+        ret_count = VEML_Single_Measurment(lux, gain, integration);
+        if(ret_count >100)
+            break; //nove to second loop
+        gain++;
+        if(gain>=4)
+            {
+                integration++;
+                gain=4;
+            }
+        if(integration==4)
+            return 0; //done!
+    }while(loop_limit-- > 0);
+
+    loop_limit = 50; //reset loop_limit
+    //Second loop
+    do
+    {
+        if(ret_count< 10000)
+            break; //done! between 100 and 10,000
+        integration--;
+        if(integration==-2) break; //very bright
+        ret_count = VEML_Single_Measurment(lux, gain, integration);
+    } while (loop_limit-- > 0);
+    
+    float lux_calc = *lux;
+    if(gain==1)
+        *lux = lux_calc * (1.0023 + lux_calc * (0.000081488 + lux_calc * (-9.3924e-9 + 6.0135e-13 * lux_calc)));
+
     return 0;
 }

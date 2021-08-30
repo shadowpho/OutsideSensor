@@ -47,7 +47,8 @@ int communicate_I2C(uint8_t device_address, bool write_comm, uint8_t register_ad
 	uint8_t buff[8];
 
 	buff[0] = register_address;
-
+	
+	if(write_comm==true)
 	for (int i = 0; i < num_of_bytes; i++)
 		buff[i + 1] = recv_buff[i];
 
