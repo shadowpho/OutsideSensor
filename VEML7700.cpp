@@ -76,7 +76,7 @@ void VEML_Single_Measurment(float* lux, int8_t gain, int8_t integration)
     //0 = 25ms, 5 = 800ms
     //0= *32, 1 = *16... 5=*1
     //(5-(integration+2)) 
-    *lux *=   2 << (5 - (integration+2));
+    *lux *=   1 << (5 - (integration+2));
     *lux *= 0.0036;
 }
 
