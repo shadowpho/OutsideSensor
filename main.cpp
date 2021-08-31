@@ -32,9 +32,10 @@ int main(){
 	read_from_BMP280(&t2,&p2);
 	printf("%.2f,%.2f,%.2f,%.2f,%.4f\n", temperature,t2,p2,  humidity, lux);
 
-	read_from_PMS(&pm10, &pm25, &pm1);
+	//read_from_PMS(&pm10, &pm25, &pm1);
 
 	sleep_ms(1000);
+	fflush(NULL);
 	}
     return 0;
 }
