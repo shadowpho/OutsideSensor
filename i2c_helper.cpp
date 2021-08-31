@@ -1,21 +1,36 @@
 #include <sys/ioctl.h> //change slave
 #include <linux/i2c-dev.h>
+#include <linux/i2c.h>
 #include <unistd.h> //Needed for I2C port
 #include <fcntl.h>
-#include <mutex>
 #include <cassert>
 #include <chrono>
 #include <thread>
-
 #include <errno.h>
-#include <linux/i2c.h>
+#include "i2c_helper.h"
+
 
 static int file_i2c_handle = 0;
 static std::mutex i2c_mutex;
 
+
+void add_to_CMA(CMA_Data* struct_data, float val)
+{
+	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
+	struct_data->CMA_value = (val +
+	(struct_data->CMA_value * struct_data->num_of_samples)) / (++struct_data->num_of_samples);
+}
+float remove_CMA(CMA_Data* struct_data)
+{
+	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
+	struct_data->num_of_samples = 0;
+	float ret_value = struct_data->CMA_value;
+	struct_data->CMA_value = 0;
+	return ret_value;
+}
+
 void sleep_ms(uint32_t sleep_ms)
 {
-
 	std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
 }
 
@@ -47,7 +62,7 @@ int communicate_I2C(uint8_t device_address, bool write_comm, uint8_t register_ad
 	uint8_t buff[8];
 
 	buff[0] = register_address;
-	
+
 	if(write_comm==true)
 	for (int i = 0; i < num_of_bytes; i++)
 		buff[i + 1] = recv_buff[i];
