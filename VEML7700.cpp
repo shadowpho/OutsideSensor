@@ -43,8 +43,9 @@ const uint8_t ALS_INT_VALUE[6] = {0xC, 0x8, 0x0, 0x1, 0x2, 0x3};
 //                           GAIN - NA,1(1/8)2(1/4)3(x1)4(x2)
 const uint8_t ALS_GAIN_VALUE[5] = {0x0, 0x2, 0x3, 0x0, 0x1};
 
-#define OH_time 1000
-const int VEML_DELAY_TIME[] = {25 + OH_time, 50 + OH_time, 100 + OH_time, 200 + OH_time, 400 + OH_time, 800 + OH_time};
+#define OH_time 60
+#define OH_MULT 1.2
+const int VEML_DELAY_TIME[] = {60,110, 200,350, 700,1200 };
 
 //Use 3,4,1,2 for gain, -2->3 for IT
 //Returns raw count
@@ -66,7 +67,7 @@ unsigned int VEML_Single_Measurment(float *lux, int8_t gain, int8_t integration)
     int delay_time_veml = VEML_DELAY_TIME[integration + 2];
     sleep_ms(delay_time_veml);
     READ_VEML7700(VEML_ALS_Data, &als_count, 2);
-    printf("Test Lux! %i\n", als_count);
+    printf("Lux!G:%i,I:%i,R:%i\n", gain, integration, als_count);
     *lux = (float)als_count;
     buff = 0x1; //shutdown
     WRITE_VEML7700(VEML_CONF_REGISTER, &buff, 2);
@@ -123,7 +124,7 @@ int read_from_VEML7700(float *lux)
                 gain=4;
             }
         if(integration==4)
-            return 0; //done!
+            return 0; //done! Probably dark
     }while(loop_limit-- > 0);
 
     loop_limit = 50; //reset loop_limit
@@ -133,7 +134,7 @@ int read_from_VEML7700(float *lux)
         if(ret_count< 10000)
             break; //done! between 100 and 10,000
         integration--;
-        if(integration==-2) break; //very bright
+        if(integration==-3) break; //very bright
         ret_count = VEML_Single_Measurment(lux, gain, integration);
     } while (loop_limit-- > 0);
     

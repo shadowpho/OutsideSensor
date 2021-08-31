@@ -7,7 +7,6 @@
 #include "BMP280.h"
 #include "i2c_helper.h"
 
-#define INTERVAL_MS 1000000
 
 #define READ_BMP280(register_address, recv_buff, num_of_bytes) assert(0 == communicate_I2C(BMP_ADDR, false, register_address, (uint8_t *)recv_buff, num_of_bytes))
 #define WRITE_BMP280(register_address, recv_buff, num_of_bytes) assert(0 == communicate_I2C(BMP_ADDR, true, register_address, (uint8_t *)recv_buff, num_of_bytes))
@@ -28,18 +27,18 @@
 
 struct
 {
-    uint16_t dig_T1; //0x88 and 0x89
-    int16_t dig_T2;
-    int16_t dig_T3;
-    uint16_t dig_P1;
-    int16_t dig_P2;
-    int16_t dig_P3;
-    int16_t dig_P4;
-    int16_t dig_P5;
-    int16_t dig_P6;
-    int16_t dig_P7;
-    int16_t dig_P8;
-    int16_t dig_P9;
+    uint16_t dig_t1; //0x88 and 0x89
+    int16_t dig_t2;
+    int16_t dig_t3;
+    uint16_t dig_p1;
+    int16_t dig_p2;
+    int16_t dig_p3;
+    int16_t dig_p4;
+    int16_t dig_p5;
+    int16_t dig_p6;
+    int16_t dig_p7;
+    int16_t dig_p8;
+    int16_t dig_p9;
 } compensation;
 
 //reset and block!
@@ -60,20 +59,72 @@ int setup_BMP280()
 }
 
 //blocking read!
-int read_from_BMP280(float *temp, float *pressure)
+int read_from_BMP280(float *temp, float *return_pressure)
 {
-    uint8_t buff[3];
+    uint8_t buff[4];
+    uint32_t uncomp_press;
+    int32_t uncomp_temp;
+    int32_t temperature;
+    uint32_t pressure;
+    int32_t t_fine;
 
     assert(temp!=nullptr);
-    assert(pressure!=nullptr);
+    assert(return_pressure!=nullptr);
 
-    WRITE_BMP280(BMP280_CTRL_MEAS,buff,1);
+    buff[0] = 0; //IIR off, no wait, 
     WRITE_BMP280(BMP280_CONFIG,buff,1);
 
+    buff[0] = 7<<5 | 7<<2 | 1; //  MAX OVERSAMPLING| forced mode 
+    WRITE_BMP280(BMP280_CTRL_MEAS,buff,1);
+    sleep_ms(140); //70 ms too soon, so let's wait 140 mS
     READ_BMP280(BMP280_STATUS,buff,1);
+    if(buff[0] !=0) 
+    {
+        printf("Error! still running! %i\n",buff);
+        return -1;
+    }
 
     READ_BMP280(BMP280_PRES_MSB,buff,3);
-
+    uncomp_press = (uint32_t)buff[0]<<12 | (uint32_t)buff[1]<<4 | (uint32_t)buff[2]>>4;
     READ_BMP280(BMP280_TEMP_MSB,buff,3);
+    uncomp_temp = (int32_t)buff[0]<<12 | (int32_t)buff[1]<<4 | (int32_t)buff[2]>>4;
+    {
+        int32_t var1, var2;
+        var1 =
+            ((((uncomp_temp / 8) - ((int32_t) compensation.dig_t1 * 2))) *
+            ((int32_t) compensation.dig_t2)) / 2048;
+        var2 =
+            (((((uncomp_temp / 16) - ((int32_t) compensation.dig_t1)) *
+            ((uncomp_temp / 16) - ((int32_t) compensation.dig_t1))) / 4096) *
+            ((int32_t) compensation.dig_t3)) / 16384;
+
+        t_fine = var1 + var2;
+
+        temperature = (t_fine * 5 + 128) / 256;
+    }
+    {
+        int64_t var1, var2, p;
+        
+        var1 = ((int64_t) t_fine) - 128000;
+        var2 = var1 * var1 * (int64_t) compensation.dig_p6;
+        var2 = var2 + ((var1 * (int64_t) compensation.dig_p5) * 131072);
+        var2 = var2 + (((int64_t) compensation.dig_p4) * (int64_t)34359738368);
+        var1 = ((var1 * var1 * (int64_t) compensation.dig_p3) / 256) +
+            ((var1 * (int64_t) compensation.dig_p2) * 4096);
+        var1 = (((((int64_t)1) * (int64_t)140737488355328) + var1)) * ((int64_t)compensation.dig_p1) / (int64_t)8589934592;
+
+        if (var1 != 0)
+        {
+            p = 1048576 - uncomp_press;
+            p = (((p * 2147483648) - var2) * 3125) / var1;
+            var1 = (((int64_t) compensation.dig_p9) * (p / 8192) * (p / 8192)) / 33554432;
+            var2 = (((int64_t) compensation.dig_p8) * p) / 524288;
+
+            p = ((p + var1 + var2) / 256) + (((int64_t)compensation.dig_p7) * 16);
+            pressure = (uint32_t)p;
+        }
+    }
+    *return_pressure = (float)pressure / 256.0;
+    *temp = ((float)temperature)/100.0;
     return 0;
 }

@@ -13,7 +13,7 @@ int main(){
 		return -1;
 	}
 
-    float temperature, humidity, lux; 
+    float temperature, humidity, lux, t2, p2; 
 
 	if(setup_hdc2080() != 0 ) return 1; 
 	printf("HDC2080 identified.\n");
@@ -22,9 +22,14 @@ int main(){
 	if(setup_VEML7700() !=0) return 3;
 	printf("VEML7700 identified.\n");
 	
-	if(read_from_hdc2080(&temperature, &humidity)!=0) return 1;
+	while(1)
+	{
+	read_from_hdc2080(&temperature, &humidity);
 	read_from_VEML7700(&lux);
-	printf("{ \"temperature\" : %.1f, \"humidity\" : %.1f, \"lux\" : %.4f}\n", temperature, humidity, lux);
-
+	read_from_BMP280(&t2,&p2);
+	printf("{ \"temperature_hdc\" : %.1f,\"temp_bmp\" : %1f, \"press\" : %1f,\
+	\"humidity\" : %.1f, \"lux\" : %.4f}\n", temperature,t2,p2,  humidity, lux);
+	sleep_ms(1000);
+	}
     return 0;
 }
