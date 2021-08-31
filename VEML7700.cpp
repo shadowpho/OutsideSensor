@@ -67,7 +67,7 @@ unsigned int VEML_Single_Measurment(float *lux, int8_t gain, int8_t integration)
     int delay_time_veml = VEML_DELAY_TIME[integration + 2];
     sleep_ms(delay_time_veml);
     READ_VEML7700(VEML_ALS_Data, &als_count, 2);
-    printf("Lux!G:%i,I:%i,R:%i\n", gain, integration, als_count);
+    //printf("Lux!G:%i,I:%i,R:%i\n", gain, integration, als_count);
     *lux = (float)als_count;
     buff = 0x1; //shutdown
     WRITE_VEML7700(VEML_CONF_REGISTER, &buff, 2);
