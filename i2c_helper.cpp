@@ -12,21 +12,36 @@
 static int file_i2c_handle = 0;
 static std::mutex i2c_mutex;
 
-void add_to_CMA(CMA_Data *struct_data, float val)
+void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3);
 {
 	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
-	struct_data->CMA_value += (double)val;
+	struct_data->CMA_value1 += (double)val1;
+	struct_data->CMA_value2 += (double)val2;
+	struct_data->CMA_value3 += (double)val3;
 	struct_data->num_of_samples++;
 }
-float remove_CMA(CMA_Data *struct_data)
+void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3);
 {
 	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
-	if (struct_data->num_of_samples == 0)
-		return 0;
-	float ret_value = struct_data->CMA_value / struct_data->num_of_samples;
+	float ret_value1 = 0;
+	float ret_value2 = 0;
+	float ret_value3 = 0;
+	if (struct_data->num_of_samples != 0)
+	{
+		ret_value1 = struct_data->CMA_value1 / struct_data->num_of_samples;
+		ret_value2 = struct_data->CMA_value2 / struct_data->num_of_samples;
+		ret_value3 = struct_data->CMA_value3 / struct_data->num_of_samples;
+	}
+	if(val1!=nullptr)
+		*val1 = ret_value1;
+	if(val2!=nullptr)
+		*val2 = ret_value2;
+	if(val3!=nullptr)
+		*val3 = ret_value3;	
 	struct_data->num_of_samples = 0;
-	struct_data->CMA_value = 0;
-	return ret_value;
+	struct_data->CMA_value1 = 0;
+	struct_data->CMA_value2 = 0;
+	struct_data->CMA_value3 = 0;
 }
 
 void sleep_ms(uint32_t sleep_ms)

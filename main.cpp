@@ -12,8 +12,41 @@ void temp_pressure_loop(CMA_Data *obj)
 {
 	while (1)
 	{
-		add_to_CMA(obj, 2.4);
-		sleep_ms(1000);
+		float t1, humidity, t2, pressure;
+		read_from_hdc2080(&t1, &humidity);
+		read_from_BMP280(&t2, &pressure);
+		add_to_CMA(obj, (t1+t2)/2, humidity, pressure);
+		sleep_ms(920);
+	}
+}
+void light_loop(CMA_Data *obj)
+{
+	while (1)
+	{
+		auto start = std::chrono::steady_clock::now();
+		float lux;
+		read_from_VEML7700(&lux);
+		add_to_CMA(obj, lux, 0, 0);
+		auto end = std::chrono::steady_clock::now();
+		std::chrono::duration<double> diff = end - start;
+		int sleep_time = 1000 - std::chrono::milliseconds(sec).count();
+		if(sleep_time>0)
+			sleep_ms(sleep_time);
+	}
+}
+void ppm_loop(CMA_Data *obj)
+{
+	while (1)
+	{
+		auto start = std::chrono::steady_clock::now();
+		uint16_t ppm10, ppm25, ppm01;
+		read_from_PMS(&ppm10, &ppm25, &ppm1);
+		add_to_CMA(obj, (float)ppm10, (float)ppm25, (float) ppm01);
+		auto end = std::chrono::steady_clock::now();
+		std::chrono::duration<double> diff = end - start;
+		int sleep_time = 1000 - std::chrono::milliseconds(sec).count();
+		if(sleep_time>0)
+			sleep_ms(sleep_time);
 	}
 }
 
@@ -40,20 +73,19 @@ int main()
 	printf("VEML7700 identified.\n");
 	setup_PMS7003();
 
-	//std::thread tmp_thread(temp_pressure_loop, &temp_pressure_data);
+	std::thread tmp_thread(temp_pressure_loop, &temp_pressure_data);
+	std::thread lux_thread(light_loop, &light_data);
+	std::thread ppm_thread(ppm_loop, &ppm_data);
 
 	while (1)
 	{
-		float temperature, humidity, lux, t2, p2;
-		read_from_hdc2080(&temperature, &humidity);
-		read_from_VEML7700(&lux);
-		read_from_BMP280(&t2, &p2);
-		printf("%.2f,%.2f,%.2f,%.2f,%.4f\n", temperature, t2, p2, humidity, lux);
+		float temp, press, humidity, lux, ppm10, ppm25, ppm01;
+		remove_CMA(&temp_pressure_data,&temp,&humidity,&press);
+		remove_CMA(&light_data,&lux,nullptr,nullptr);
+		remove_CMA(&ppm_data,&ppm10, &ppm25, &ppm01);
 
-		//read_from_PMS(&pm10, &pm25, &pm1);
-		/*float data = remove_CMA(&temp_pressure_data);
-		printf("Float:%f", data);*/
-		sleep_ms(1000);
+		printf("%.2f,%.2f,%.2f,%.4f,%.1f\n", temp, press, humidity, lux, ppm10);
+		sleep_ms(60000);
 		fflush(NULL);
 	}
 	return 0;
