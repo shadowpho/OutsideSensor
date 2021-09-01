@@ -9,22 +9,22 @@
 #include <errno.h>
 #include "i2c_helper.h"
 
-
 static int file_i2c_handle = 0;
 static std::mutex i2c_mutex;
 
-
-void add_to_CMA(CMA_Data* struct_data, float val)
+void add_to_CMA(CMA_Data *struct_data, float val)
 {
 	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
-	struct_data->CMA_value = (val +
-	(struct_data->CMA_value * struct_data->num_of_samples)) / (++struct_data->num_of_samples);
+	struct_data->CMA_value += (double)val;
+	struct_data->num_of_samples++;
 }
-float remove_CMA(CMA_Data* struct_data)
+float remove_CMA(CMA_Data *struct_data)
 {
 	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
+	if (struct_data->num_of_samples == 0)
+		return 0;
+	float ret_value = struct_data->CMA_value / struct_data->num_of_samples;
 	struct_data->num_of_samples = 0;
-	float ret_value = struct_data->CMA_value;
 	struct_data->CMA_value = 0;
 	return ret_value;
 }
@@ -63,9 +63,9 @@ int communicate_I2C(uint8_t device_address, bool write_comm, uint8_t register_ad
 
 	buff[0] = register_address;
 
-	if(write_comm==true)
-	for (int i = 0; i < num_of_bytes; i++)
-		buff[i + 1] = recv_buff[i];
+	if (write_comm == true)
+		for (int i = 0; i < num_of_bytes; i++)
+			buff[i + 1] = recv_buff[i];
 
 	struct i2c_msg msgs[2];
 	struct i2c_rdwr_ioctl_data msgset[1];

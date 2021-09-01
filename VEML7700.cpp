@@ -29,13 +29,14 @@ Gain selection G:
 10 = ALS gain x (1/8) → 1
 11 = ALS gain x (1/4) → 2
 */
-enum VEML_IT_TIME{
-VEML_25MS = -2,
-VEML_50MS = -1,
-VEML_100MS = 0,
-VEML_200MS = 1,
-VEML_400MS = 2,
-VEML_800MS = 3
+enum VEML_IT_TIME
+{
+    VEML_25MS = -2,
+    VEML_50MS = -1,
+    VEML_100MS = 0,
+    VEML_200MS = 1,
+    VEML_400MS = 2,
+    VEML_800MS = 3
 };
 
 //                                0    1     2   3   4   5
@@ -45,7 +46,7 @@ const uint8_t ALS_GAIN_VALUE[5] = {0x0, 0x2, 0x3, 0x0, 0x1};
 
 #define OH_time 60
 #define OH_MULT 1.2
-const int VEML_DELAY_TIME[] = {60,110, 200,350, 700,1200 };
+const int VEML_DELAY_TIME[] = {60, 110, 200, 350, 700, 1200};
 
 //Use 3,4,1,2 for gain, -2->3 for IT
 //Returns raw count
@@ -108,38 +109,40 @@ int setup_VEML7700()
 
 int read_from_VEML7700(float *lux)
 {
-    int gain=1;
-    int integration=0;
+    int gain = 1;
+    int integration = 0;
     int ret_count = 0;
-    int loop_limit = 50; 
+    int loop_limit = 10;
 
-    do{
+    do
+    {
         ret_count = VEML_Single_Measurment(lux, gain, integration);
-        if(ret_count >100)
+        if (ret_count > 100)
             break; //nove to second loop
         gain++;
-        if(gain>=4)
-            {
-                integration++;
-                gain=4;
-            }
-        if(integration==4)
+        if (gain >= 4)
+        {
+            integration++;
+            gain = 4;
+        }
+        if (integration == 4)
             return 0; //done! Probably dark
-    }while(loop_limit-- > 0);
+    } while (loop_limit-- > 0);
 
-    loop_limit = 50; //reset loop_limit
+    loop_limit = 10; //reset loop_limit
     //Second loop
     do
     {
-        if(ret_count< 10000)
+        if (ret_count < 10000)
             break; //done! between 100 and 10,000
         integration--;
-        if(integration==-3) break; //very bright
+        if (integration == -3)
+            break; //very bright
         ret_count = VEML_Single_Measurment(lux, gain, integration);
     } while (loop_limit-- > 0);
-    
+
     float lux_calc = *lux;
-    if(gain==1)
+    if (gain == 1)
         *lux = lux_calc * (1.0023 + lux_calc * (0.000081488 + lux_calc * (-9.3924e-9 + 6.0135e-13 * lux_calc)));
 
     return 0;
