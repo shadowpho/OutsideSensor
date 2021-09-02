@@ -11,10 +11,11 @@
 
 
 #include "password.h"
-const char[] db_password = PASSWORD;
+#define db_password  PASSWORD
+
 const int DEVICEID = 103;
 const int COMMIT_EVERY_MINUTE=1;
-const char SQL_DB_PATH = "outside_sensor.db"
+#define SQL_DB_PATH  "outside_sensor.db"
 
 
 void temp_pressure_loop(CMA_Data *obj)
@@ -38,7 +39,7 @@ void light_loop(CMA_Data *obj)
 		add_to_CMA(obj, lux, 0, 0);
 		auto end = std::chrono::steady_clock::now();
 		std::chrono::duration<double> diff = end - start;
-		int sleep_time = 1000 - std::chrono::milliseconds(sec).count();
+		int sleep_time = 1000 - std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
 		if(sleep_time>0)
 			sleep_ms(sleep_time);
 	}
@@ -49,11 +50,11 @@ void ppm_loop(CMA_Data *obj)
 	{
 		auto start = std::chrono::steady_clock::now();
 		uint16_t ppm10, ppm25, ppm01;
-		read_from_PMS(&ppm10, &ppm25, &ppm1);
+		read_from_PMS(&ppm10, &ppm25, &ppm10);
 		add_to_CMA(obj, (float)ppm10, (float)ppm25, (float) ppm01);
 		auto end = std::chrono::steady_clock::now();
 		std::chrono::duration<double> diff = end - start;
-		int sleep_time = 1000 - std::chrono::milliseconds(sec).count();
+		int sleep_time = 1000 - std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
 		if(sleep_time>0)
 			sleep_ms(sleep_time);
 	}

@@ -12,7 +12,7 @@
 static int file_i2c_handle = 0;
 static std::mutex i2c_mutex;
 
-void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3);
+void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3)
 {
 	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
 	struct_data->CMA_value1 += (double)val1;
@@ -20,7 +20,7 @@ void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3);
 	struct_data->CMA_value3 += (double)val3;
 	struct_data->num_of_samples++;
 }
-void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3);
+void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3)
 {
 	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
 	float ret_value1 = 0;
