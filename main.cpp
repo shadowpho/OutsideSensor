@@ -1,12 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <thread>
+#include <sqlite3.h> 
 
 #include "HDC2080.h"
 #include "BMP280.h"
 #include "VEML7700.h"
 #include "PMS7003.h"
 #include "i2c_helper.h"
+
+
+#include "password.h"
+const char[] db_password = PASSWORD;
+const int DEVICEID = 103;
+const int COMMIT_EVERY_MINUTE=1;
+const char SQL_DB_PATH = "outside_sensor.db"
+
 
 void temp_pressure_loop(CMA_Data *obj)
 {
@@ -73,20 +82,32 @@ int main()
 	printf("VEML7700 identified.\n");
 	setup_PMS7003();
 
+	sqlite3* DB;
+	int ret = sqlite3_open(SQL_DB_PATH, &DB);
+	if(ret==false)
+	{
+		printf("Unable to open DB!\n");
+		return -50;
+	}
+
 	std::thread tmp_thread(temp_pressure_loop, &temp_pressure_data);
 	std::thread lux_thread(light_loop, &light_data);
 	std::thread ppm_thread(ppm_loop, &ppm_data);
 
 	while (1)
 	{
+
 		float temp, press, humidity, lux, ppm10, ppm25, ppm01;
 		remove_CMA(&temp_pressure_data,&temp,&humidity,&press);
 		remove_CMA(&light_data,&lux,nullptr,nullptr);
 		remove_CMA(&ppm_data,&ppm10, &ppm25, &ppm01);
 
 		printf("%.2f,%.2f,%.2f,%.4f,%.1f\n", temp, press, humidity, lux, ppm10);
-		sleep_ms(60000);
+		sleep_ms(10 * 1000);
+		
 		fflush(NULL);
 	}
+
+	sqlite3_close(DB);
 	return 0;
 }
