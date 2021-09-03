@@ -153,7 +153,7 @@ bool PmsProcess(uint8_t b)
 
 void read_from_PMS(uint16_t *pm10, uint16_t *pm25, uint16_t *pm1)
 {
-    uint8_t buf[128];
+    uint8_t buf[state.size];
     while(1)
     {
     int read_chars = read(serialport_FD, buf, sizeof(buf));

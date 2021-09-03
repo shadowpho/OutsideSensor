@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(OutsideSensor)
-
+add_compile_options("-std=c++20")
 find_package(Threads)
 find_package(SQLite3)
 file(GLOB SOURCES *.cpp)
