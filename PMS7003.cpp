@@ -6,7 +6,8 @@
 #include <errno.h>
 #include <termios.h>
 #include <cassert>
-
+#include "i2c_helper.h"
+    
 #define MAGIC1 0x42
 #define MAGIC2 0x4D
 
@@ -153,8 +154,18 @@ bool PmsProcess(uint8_t b)
 void read_from_PMS(uint16_t *pm10, uint16_t *pm25, uint16_t *pm1)
 {
     uint8_t buf[128];
+    while(1)
+    {
     int read_chars = read(serialport_FD, buf, sizeof(buf));
     for (int i = 0; i < read_chars; i++)
         if (PmsProcess(buf[i]))
-            printf("%i, %i, %i\n", get(state.buf, 0), get(state.buf, 2), get(state.buf, 4));
+        {
+            *pm10 = get(state.buf, 4);
+            *pm25 = get(state.buf, 2);
+            *pm1  = get(state.buf, 0);
+            return;
+        }
+    sleep_ms(300);
+    }
+            
 }

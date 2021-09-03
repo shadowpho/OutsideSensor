@@ -26,7 +26,7 @@ void temp_pressure_loop(CMA_Data *obj)
 		read_from_hdc2080(&t1, &humidity);
 		read_from_BMP280(&t2, &pressure);
 		add_to_CMA(obj, (t1+t2)/2, humidity, pressure);
-		sleep_ms(920);
+		sleep_ms(650);
 	}
 }
 void light_loop(CMA_Data *obj)
@@ -85,12 +85,14 @@ int main()
 
 	sqlite3* DB;
 	int ret = sqlite3_open(SQL_DB_PATH, &DB);
-	if(ret==false)
+	if(ret)
 	{
 		printf("Unable to open DB!\n");
+		printf("Can't open database: %s\n", sqlite3_errmsg(DB));
 		return -50;
 	}
 
+	sleep_ms(1000); //give time for everything to reset
 	std::thread tmp_thread(temp_pressure_loop, &temp_pressure_data);
 	std::thread lux_thread(light_loop, &light_data);
 	std::thread ppm_thread(ppm_loop, &ppm_data);

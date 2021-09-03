@@ -76,11 +76,14 @@ int read_from_BMP280(float *temp, float *return_pressure)
 
     buff[0] = 7<<5 | 7<<2 | 1; //  MAX OVERSAMPLING| forced mode 
     WRITE_BMP280(BMP280_CTRL_MEAS,buff,1);
-    sleep_ms(140); //70 ms too soon, so let's wait 140 mS
-    READ_BMP280(BMP280_STATUS,buff,1);
-    if(buff[0] !=0) 
+    
+    sleep_ms(200); //70 ms too soon, so let's wait 140 mS
+ 
+    READ_BMP280(BMP280_CTRL_MEAS,buff,1);
+    if(buff[0] != (7<<5 | 7<<2)) 
     {
-        printf("Error! still running! %i\n",buff);
+        printf("BMP280 Error! still running! %i\n",buff[0]);
+
         return -1;
     }
 
