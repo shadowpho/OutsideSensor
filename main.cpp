@@ -122,8 +122,9 @@ int main()
 	float temp, humidity, press, lux, ppm10, ppm25, ppm01;
 	while (1)
 	{
+		sql_transaction_string.str("");
 		sql_transaction_string << "INSERT INTO sensors VALUES(";
-		sleep_ms(10 * 1000); //1x a minute
+		sleep_ms(60 * 1000); //1x a minute
 
 		remove_CMA(&temp_pressure_data,&temp,&humidity,&press);
 		remove_CMA(&light_data,&lux,nullptr,nullptr);
@@ -147,12 +148,13 @@ int main()
         	sqlite3_free(messageError);
 			return -1;
     	}
-		ret = sqlite3_exec(DB, "COMMIT;", NULL, 0, &messageError);
+		ret = sqlite3_db_cacheflush(DB);
 		if (ret != SQLITE_OK) {
-        	printf("Error COMMIT into Table! %s\n",messageError);
+        	printf("Error FLUSHING into Table! %s\n",messageError);
         	sqlite3_free(messageError);
 			return -1;
     	}
+		
 
 
 		fflush(NULL);
