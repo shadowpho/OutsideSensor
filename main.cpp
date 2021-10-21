@@ -122,10 +122,17 @@ int per_row_callback(void* string_item, int argc, char** argv, char** column_nam
 		{
 			if(ordering[i]==-1)
 				return -98;
-			if(i!=1)
+			
+			if(i==0)
+			{
+				(*continuous_insert)+="\'";
 				(*continuous_insert)+=argv[ordering[i]];
-			else /*i==1*/
+				(*continuous_insert)+="\'";
+			}
+			else if(i==1)
 				(*continuous_insert)+=DEVICEID;
+			else /*i!=1 or 0*/
+				(*continuous_insert)+=argv[ordering[i]];
 			if(i!=8)
 				(*continuous_insert)+=",";
 		}
