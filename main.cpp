@@ -18,7 +18,7 @@
 #include "password.h"
 #define db_password  PASSWORD
 
-const int DEVICEID = 103;
+const char* DEVICEID = "103";
 const int COMMIT_EVERY_MS=60 * 1000;
 const int COMMIT_TO_ONLINE=10;
 
@@ -66,19 +66,19 @@ void ppm_loop(CMA_Data *obj)
 			sleep_ms(sleep_time);
 	}
 }
-int sqlite3_callback(void* string_item, int argc, char** argv, char** column_name)
+int per_row_callback(void* string_item, int argc, char** argv, char** column_name)
 {
 	if(string_item==NULL)
 		return -1;
 	if(argc !=8)
 		return -2;
-	std::string continuous_insert = * (std::string*)string_item;
-	string_item+="INSERT INTO rpi_sensor(time, sensor_id, temperature, pressure, humidity, light, ppm1, ppm25, ppm10)";
-	string_item+="VALUES (";
+	std::string *continuous_insert =  (std::string*)string_item;
+	(*continuous_insert)+="INSERT INTO rpi_sensor(time, sensor_id, temperature, pressure, humidity, light, ppm1, ppm25, ppm10) ";
+	(*continuous_insert)+="VALUES(";
 	int ordering[9];
 	for(int i=0;i<8;i++)
 		ordering[i]=-1;
-
+	ordering[1] = 55; //special
 	for(int i=0;i<argc;i++)
 	{
 		if (strcmp(column_name[i], "iso_date")==0)
@@ -87,45 +87,50 @@ int sqlite3_callback(void* string_item, int argc, char** argv, char** column_nam
 		}
 		else if(strcmp(column_name[i], "temp")==0)
 		{
-			ordering[1]=i;
+			ordering[2]=i;
 		}
 		else if(strcmp(column_name[i], "pressure")==0)
 		{
-			ordering[2]=i;
+			ordering[3]=i;
 		}
 		else if(strcmp(column_name[i], "humidity")==0)
 		{
-			ordering[3]=i;
+			ordering[4]=i;
 		}
 		else if(strcmp(column_name[i], "lux")==0)
 		{
-			ordering[4]=i;
+			ordering[5]=i;
 		}
 		else if(strcmp(column_name[i], "ppm1")==0)
 		{
-			ordering[5]=i;
+			ordering[6]=i;
 		}
 		else if(strcmp(column_name[i], "ppm25")==0)
 		{
-			ordering[6]=i;
+			ordering[7]=i;
 		}
 		else if(strcmp(column_name[i], "ppm10")==0)
 		{
-			ordering[7]=i;
+			ordering[8]=i;
 		}
 		else
 		{
 			return -99; //bad
 		}
 	}
-		for(int i=0;i<8;i++)
+		for(int i=0;i< (8 + 1);i++)
 		{
 			if(ordering[i]==-1)
 				return -98;
-			string_item+=argv[ordering[i]];
+			if(i!=1)
+				(*continuous_insert)+=argv[ordering[i]];
+			else /*i==1*/
+				(*continuous_insert)+=DEVICEID;
+			if(i!=8)
+				(*continuous_insert)+=",";
 		}
 	
-	string_item+=") ON CONFLICT DO NOTHING;";
+	(*continuous_insert)+=") ON CONFLICT DO NOTHING;";
 	return 0; //success
 }
 
@@ -226,9 +231,8 @@ int main()
 			commit=0;
 			try
 			{
-				sql_transaction_string.str("select * from sensors;");
 				std::string result_string = "";
-				ret = sqlite3_exec(DB, sql_transaction_string.str().c_str(), &sqlite3_callback, &result_string, &messageError);
+				ret = sqlite3_exec(DB, "select * from sensors;", &per_row_callback, &result_string, &messageError);
 				if (ret != SQLITE_OK) {
 					printf("Error REMOVING from Table! %s\n",messageError);
 					sqlite3_free(messageError);
@@ -238,8 +242,7 @@ int main()
 				pqxx::work w(c);
 				pqxx::result r = w.exec(result_string);
 				w.commit();
-				sql_transaction_string.str("DELETE FROM sensors;");
-				ret = sqlite3_exec(DB, sql_transaction_string.str().c_str(), NULL, 0, &messageError);
+				ret = sqlite3_exec(DB, "DELETE FROM sensors;", NULL, 0, &messageError);
 				if (ret != SQLITE_OK) {
 					printf("Error cleaning the table! %s\n",messageError);
 					sqlite3_free(messageError);
