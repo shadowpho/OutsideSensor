@@ -6,7 +6,7 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-
+#include <pqxx/pqxx>
 
 #include "HDC2080.h"
 #include "BMP280.h"
@@ -19,7 +19,9 @@
 #define db_password  PASSWORD
 
 const int DEVICEID = 103;
-const int COMMIT_EVERY_MINUTE=1;
+const int COMMIT_EVERY_MS=60 * 1000;
+const int COMMIT_TO_ONLINE=10;
+
 #define SQL_DB_PATH  "outside_sensor.db"
 
 
@@ -63,6 +65,68 @@ void ppm_loop(CMA_Data *obj)
 		if(sleep_time>0)
 			sleep_ms(sleep_time);
 	}
+}
+int sqlite3_callback(void* string_item, int argc, char** argv, char** column_name)
+{
+	if(string_item==NULL)
+		return -1;
+	if(argc !=8)
+		return -2;
+	std::string continuous_insert = * (std::string*)string_item;
+	string_item+="INSERT INTO rpi_sensor(time, sensor_id, temperature, pressure, humidity, light, ppm1, ppm25, ppm10)";
+	string_item+="VALUES (";
+	int ordering[9];
+	for(int i=0;i<8;i++)
+		ordering[i]=-1;
+
+	for(int i=0;i<argc;i++)
+	{
+		if (strcmp(column_name[i], "iso_date")==0)
+		{
+			ordering[0]=i;
+		}
+		else if(strcmp(column_name[i], "temp")==0)
+		{
+			ordering[1]=i;
+		}
+		else if(strcmp(column_name[i], "pressure")==0)
+		{
+			ordering[2]=i;
+		}
+		else if(strcmp(column_name[i], "humidity")==0)
+		{
+			ordering[3]=i;
+		}
+		else if(strcmp(column_name[i], "lux")==0)
+		{
+			ordering[4]=i;
+		}
+		else if(strcmp(column_name[i], "ppm1")==0)
+		{
+			ordering[5]=i;
+		}
+		else if(strcmp(column_name[i], "ppm25")==0)
+		{
+			ordering[6]=i;
+		}
+		else if(strcmp(column_name[i], "ppm10")==0)
+		{
+			ordering[7]=i;
+		}
+		else
+		{
+			return -99; //bad
+		}
+	}
+		for(int i=0;i<8;i++)
+		{
+			if(ordering[i]==-1)
+				return -98;
+			string_item+=argv[ordering[i]];
+		}
+	
+	string_item+=") ON CONFLICT DO NOTHING;";
+	return 0; //success
 }
 
 int main()
@@ -120,11 +184,12 @@ int main()
 
 	std::stringstream sql_transaction_string;
 	float temp, humidity, press, lux, ppm10, ppm25, ppm01;
+	int commit=0;
 	while (1)
 	{
 		sql_transaction_string.str("");
 		sql_transaction_string << "INSERT INTO sensors VALUES(";
-		sleep_ms(60 * 1000); //1x a minute
+		sleep_ms(COMMIT_EVERY_MS); //1x a minute
 
 		remove_CMA(&temp_pressure_data,&temp,&humidity,&press);
 		remove_CMA(&light_data,&lux,nullptr,nullptr);
@@ -152,12 +217,42 @@ int main()
 		if (ret != SQLITE_OK) {
         	printf("Error FLUSHING into Table! %s\n",messageError);
         	sqlite3_free(messageError);
-			return -1;
+			return -3;
     	}
-		
-
-
 		fflush(NULL);
+		commit++;
+		if(commit>=COMMIT_TO_ONLINE)
+		{
+			commit=0;
+			try
+			{
+				sql_transaction_string.str("select * from sensors;");
+				std::string result_string = "";
+				ret = sqlite3_exec(DB, sql_transaction_string.str().c_str(), &sqlite3_callback, &result_string, &messageError);
+				if (ret != SQLITE_OK) {
+					printf("Error REMOVING from Table! %s\n",messageError);
+					sqlite3_free(messageError);
+					return -2;
+				}
+				pqxx::connection c("dbname=sensors host=database user=sensors_write password=" db_password);
+				pqxx::work w(c);
+				pqxx::result r = w.exec(result_string);
+				w.commit();
+				sql_transaction_string.str("DELETE FROM sensors;");
+				ret = sqlite3_exec(DB, sql_transaction_string.str().c_str(), NULL, 0, &messageError);
+				if (ret != SQLITE_OK) {
+					printf("Error cleaning the table! %s\n",messageError);
+					sqlite3_free(messageError);
+					return -4;
+				}
+
+			}
+			 catch (const std::exception &e)
+			{
+				printf("Error connecting to primary database! %s\n",e.what());
+			}
+
+		}
 	}
 
 	sqlite3_close(DB);
