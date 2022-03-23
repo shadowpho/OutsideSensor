@@ -26,6 +26,7 @@
 					BME680  sIAQ, H,P,T, CO2eq,
 					MQ9B    voltage
 					SFA30   CH₂O ppb, H, T
+					Sen5x PM0.5 PM1 PM2.5 H, T, VocIndex, NoxIndex(1-500,100=average)
 */
 
 //#define UNIT_OUTSIDE
