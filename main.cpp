@@ -16,26 +16,55 @@
 
 
 #include "password.h"
+
+
+/*
+	UNIT_INSIDE -- PMS7003, VEML7700, HDC2080, BMP280
+	UNIT_OUTSIDE -- OLED, BMP280, SGP40, BME680, MQ9B(ADS1115), SFA30, Sen5x
+				--  BMP280  P,T
+			        SGP40   VOC_Index(0-500), 
+					BME680  sIAQ, H,P,T, CO2eq,
+					MQ9B    voltage
+					SFA30   CH₂O ppb, H, T
+*/
+
+//#define UNIT_OUTSIDE
+#define UNIT_INSIDE
+
 #define db_password  PASSWORD
 
+#ifdef UNIT_OUTSIDE
 const char* DEVICEID = "103";
 const int COMMIT_EVERY_MS=60 * 1000;
 const int COMMIT_TO_ONLINE=10;
+#endif
 
-#define SQL_DB_PATH  "outside_sensor.db"
+#ifdef UNIT_INSIDE
+const char* DEVICEID = "104";
+const int COMMIT_EVERY_MS=10 * 1000; 
+const int COMMIT_TO_ONLINE=60;
+#endif
+
+
+
+#define SQL_DB_PATH  "inside_sensor.db"
 
 
 void temp_pressure_loop(CMA_Data *obj)
 {
 	while (1)
 	{
-		float t1, humidity, t2, pressure;
+		float t1=0, humidity, t2, pressure;
+#ifdef UNIT_OUTSIDE
 		read_from_hdc2080(&t1, &humidity);
+#endif 
 		read_from_BMP280(&t2, &pressure);
+		if(t1==0) t1=t2;
 		add_to_CMA(obj, (t1+t2)/2, humidity,pressure);
 		sleep_ms(650);
 	}
 }
+#ifdef UNIT_OUTSIDE
 void light_loop(CMA_Data *obj)
 {
 	while (1)
@@ -51,6 +80,7 @@ void light_loop(CMA_Data *obj)
 			sleep_ms(sleep_time);
 	}
 }
+
 void ppm_loop(CMA_Data *obj)
 {
 	while (1)
@@ -66,6 +96,7 @@ void ppm_loop(CMA_Data *obj)
 			sleep_ms(sleep_time);
 	}
 }
+#endif 
 int per_row_callback(void* string_item, int argc, char** argv, char** column_name)
 {
 	if(string_item==NULL)
@@ -149,21 +180,30 @@ int main()
 		return -1;
 	}
 
-	CMA_Data temp_pressure_data;
-	CMA_Data light_data;
-	CMA_Data ppm_data;
+#ifdef UNIT_OUTSIDE
+	CMA_Data temp_pressure_data, light_data, ppm_data;
+#endif
 
+#ifdef UNIT_INSIDE
+	CMA_Data bmp280_data, ppm_data, sfa30_data, sgp40_data, bme680_data, ads1115_data;
+#endif
+
+#ifdef UNIT_OUTSIDE
 	if (setup_hdc2080() != 0)
 		return 1;
 	printf("HDC2080 identified.\n");
-	if (setup_BMP280() != 0)
-		return 2;
-	printf("BMP280 identified.\n");
 	if (setup_VEML7700() != 0)
 		return 3;
 	printf("VEML7700 identified.\n");
 	setup_PMS7003();
+#endif 
 
+
+	//COMMON
+	if (setup_BMP280() != 0)
+		return 2;
+	printf("BMP280 identified.\n");
+	
 	sqlite3* DB;
 	int ret = sqlite3_open(SQL_DB_PATH, &DB);
 	if(ret)
@@ -172,6 +212,7 @@ int main()
 		printf("Can't open database: %s\n", sqlite3_errmsg(DB));
 		return -50;
 	}
+#ifdef UNIT_OUTSIDE
 	const char* create_db = "CREATE TABLE IF NOT EXISTS sensors ("
 							"iso_date TEXT NOT NULL, "
 							"temp REAL NOT NULL, "
@@ -181,19 +222,37 @@ int main()
 							"ppm1 REAL NOT NULL, "
 							"ppm25 REAL NOT NULL, "
 							"ppm10 REAL NOT NULL);";
+#endif 
+#ifdef UNIT_INSIDE
+	const char* create_db = "CREATE TABLE IF NOT EXISTS sensors ("
+							"iso_date TEXT NOT NULL, "
+							"temp REAL NOT NULL, "
+							"pressure REAL NOT NULL, "
+							"humidity REAL NOT NULL, "
+							"voc REAL NOT NULL, "
+							"ppm1 REAL NOT NULL, "
+							"ppm25 REAL NOT NULL, "
+							"ppm10 REAL NOT NULL);";
+#endif 
+/* XXX
 	char* messageError;
 	ret = sqlite3_exec(DB, create_db, NULL, 0, &messageError);
 	if (ret != SQLITE_OK) {
         printf("Error Create Table! %s\n",messageError);
         sqlite3_free(messageError);
     }
-
+*/
 
 	sleep_ms(1000); //give time for everything to reset
-	std::thread tmp_thread(temp_pressure_loop, &temp_pressure_data);
+
+#ifdef UNIT_OUTSIDE
 	std::thread lux_thread(light_loop, &light_data);
 	std::thread ppm_thread(ppm_loop, &ppm_data);
+#endif
 
+	std::thread tmp_thread(temp_pressure_loop, &temp_pressure_data);
+	
+	
 	std::stringstream sql_transaction_string;
 	float temp, humidity, press, lux, ppm10, ppm25, ppm01;
 	int commit=0;
@@ -204,11 +263,12 @@ int main()
 		sleep_ms(COMMIT_EVERY_MS); //1x a minute
 
 		remove_CMA(&temp_pressure_data,&temp,&humidity,&press);
+#ifdef UNIT_OUTSIDE
 		remove_CMA(&light_data,&lux,nullptr,nullptr);
 		remove_CMA(&ppm_data,&ppm10, &ppm25, &ppm01);
-
+#endif
 		std::time_t t= std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-		sql_transaction_string << std::put_time(std::gmtime(&t), "\"%FT%T\"" );
+		sql_transaction_string << std::put_time(std::gmtime(&t), "\"%FT%TZ\"" );
 		sql_transaction_string << ",";
 		sql_transaction_string << temp << ",";
 		sql_transaction_string << press << ",";
@@ -218,7 +278,7 @@ int main()
 		sql_transaction_string << ppm25 << ",";
 		sql_transaction_string << ppm10 << ");";
 
-		std::cout << sql_transaction_string.str() << std::endl;
+		//std::cout << sql_transaction_string.str() << std::endl;
 		ret = sqlite3_exec(DB, sql_transaction_string.str().c_str(), NULL, 0, &messageError);
 		if (ret != SQLITE_OK) {
         	printf("Error INSERTING into Table! %s\n",messageError);
@@ -233,7 +293,8 @@ int main()
     	}
 		fflush(NULL);
 		commit++;
-		if(commit>=COMMIT_TO_ONLINE)
+		if(false)
+		//if(commit>=COMMIT_TO_ONLINE)
 		{
 			commit=0;
 			try
