@@ -115,3 +115,34 @@ int communicate_I2C(uint8_t device_address, bool write_comm, uint8_t register_ad
 
 	return 0;
 }
+
+int write_read_I2C(uint8_t device_address, uint8_t* write_buff, uint8_t num_write, uint8_t* read_buff, uint8_t num_read)
+{
+	const std::lock_guard<std::mutex> lock(i2c_mutex);
+	assert(read_buff != nullptr);
+	assert(write_buff != nullptr);
+
+	struct i2c_msg msgs[2];
+	struct i2c_rdwr_ioctl_data msgset[1];
+
+	msgs[0].addr = device_address;
+	msgs[0].flags = 0; //first byte  write
+	msgs[0].len = num_write;
+	msgs[0].buf = write_buff;
+
+	msgs[1].addr = device_address;
+	msgs[1].flags = I2C_M_RD;
+	msgs[1].len = num_read;
+	msgs[1].buf = read_buff;
+
+	msgset[0].msgs = msgs;
+	msgset[0].nmsgs = 2;
+
+	if (ioctl(file_i2c_handle, I2C_RDWR, &msgset) < 0)
+	{
+		perror("ioctl(I2C_RDWR) in i2c_comm");
+		return -1;
+	}
+
+	return 0;
+}

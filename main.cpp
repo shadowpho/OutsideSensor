@@ -8,6 +8,10 @@
 #include <iostream>
 #include <pqxx/pqxx>
 
+#include "SFA30x.h"
+#include "ADS1115.h"
+#include "SGP40.h"
+#include "SEN5x.h"
 #include "HDC2080.h"
 #include "BMP280.h"
 #include "VEML7700.h"
@@ -212,15 +216,30 @@ int main()
     gas_sensor.amb_temp = 20;
 
 
-    int8_t rslt = BME68X_OK;
-    rslt = bme68x_selftest_check(&gas_sensor);
-	printf("Result from ble680 init:%i\n",rslt);
-
 	//COMMON
 	if (setup_BMP280() != 0)
 		return 2;
 	printf("BMP280 identified.\n");
 	return 3;
+	//XXX - GET AMBIENT FROM BMP280 AND PASS TO BME68x
+
+    int8_t rslt = BME68X_OK;
+    rslt = bme68x_selftest_check(&gas_sensor);
+	if(rslt==0)
+		printf("BME680 identified and pass self-test\n");
+	else{
+		printf("BME680 FAIL SELFTEST: %i\n",rslt);
+		return 5;
+	}
+	
+	rslt = sfa3x_start();
+	if(rslt==0)
+		printf("SFA30 identified\n");
+	else{
+		printf("SFA30 start fail: %i\n",rslt);
+		return 6;
+	}
+
 	
 	sqlite3* DB;
 	int ret = sqlite3_open(SQL_DB_PATH, &DB);
