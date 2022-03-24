@@ -239,7 +239,27 @@ int main()
 		printf("SFA30 start fail: %i\n",rslt);
 		return 6;
 	}
-
+	rslt = ads1115_start();
+	if(rslt==0)
+		printf("ads1115 identified\n");
+	else{
+		printf("ads1115 start fail: %i\n",rslt);
+		return 7;
+	}
+	rslt = SEN5x_start();
+	if(rslt==0)
+		printf("SEN5x identified\n");
+	else{
+		printf("SEN5x start fail: %i\n",rslt);
+		return 7;
+	}
+	rslt = SGP40_start();
+	if(rslt==0)
+		printf("SGP40 identified\n");
+	else{
+		printf("SGP40 start fail: %i\n",rslt);
+		return 8;
+	}
 	
 	sqlite3* DB;
 	int ret = sqlite3_open(SQL_DB_PATH, &DB);
