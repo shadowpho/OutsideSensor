@@ -13,9 +13,11 @@
 #include "VEML7700.h"
 #include "PMS7003.h"
 #include "i2c_helper.h"
-
+#include "BME680/bme68x.h"
+#include "BME680/bme68x_adapter.h"
 
 #include "password.h"
+
 
 
 /*
@@ -186,7 +188,7 @@ int main()
 #endif
 
 #ifdef UNIT_INSIDE
-	CMA_Data bmp280_data, ppm_data, sfa30_data, sgp40_data, bme680_data, ads1115_data;
+	CMA_Data temp_pressure_data, bmp280_data, ppm_data, sfa30_data, sgp40_data, bme680_data, ads1115_data;
 #endif
 
 #ifdef UNIT_OUTSIDE
@@ -199,11 +201,26 @@ int main()
 	setup_PMS7003();
 #endif 
 
+  struct bme68x_dev gas_sensor;
+
+    //gas_sensor.dev_id = BME68X_I2C_ADDR_HIGH;
+    gas_sensor.intf = BME68X_I2C_INTF;
+    gas_sensor.read = user_i2c_read;
+    gas_sensor.write = user_i2c_write;
+    gas_sensor.delay_us = user_delay_us;
+
+    gas_sensor.amb_temp = 20;
+
+
+    int8_t rslt = BME68X_OK;
+    rslt = bme68x_selftest_check(&gas_sensor);
+	printf("Result from ble680 init:%i\n",rslt);
 
 	//COMMON
 	if (setup_BMP280() != 0)
 		return 2;
 	printf("BMP280 identified.\n");
+	return 3;
 	
 	sqlite3* DB;
 	int ret = sqlite3_open(SQL_DB_PATH, &DB);
@@ -235,8 +252,9 @@ int main()
 							"ppm25 REAL NOT NULL, "
 							"ppm10 REAL NOT NULL);";
 #endif 
-/* XXX
 	char* messageError;
+/* XXX
+
 	ret = sqlite3_exec(DB, create_db, NULL, 0, &messageError);
 	if (ret != SQLITE_OK) {
         printf("Error Create Table! %s\n",messageError);
@@ -261,7 +279,7 @@ int main()
 	{
 		sql_transaction_string.str("");
 		sql_transaction_string << "INSERT INTO sensors VALUES(";
-		sleep_ms(COMMIT_EVERY_MS); //1x a minute
+		sleep_ms(COMMIT_EVERY_MS); 
 
 		remove_CMA(&temp_pressure_data,&temp,&humidity,&press);
 #ifdef UNIT_OUTSIDE

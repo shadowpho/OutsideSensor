@@ -16,6 +16,7 @@ void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3);
 void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3);
 
 void sleep_ms(uint32_t sleep_ms);
+void sleep_us(uint32_t sleep_us);
 
 int communicate_I2C(uint8_t device_address, bool write_comm, uint8_t register_address, uint8_t *recv_buff, int8_t num_of_bytes);
 

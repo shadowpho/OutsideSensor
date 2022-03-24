@@ -48,7 +48,10 @@ void sleep_ms(uint32_t sleep_ms)
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
 }
-
+void sleep_us(uint32_t sleep_us)
+{
+	std::this_thread::sleep_for(std::chrono::microseconds(sleep_us));
+}
 int setup_i2C()
 {
 	//OPEN I2C communication
@@ -67,14 +70,14 @@ int communicate_I2C(uint8_t device_address, bool write_comm, uint8_t register_ad
 {
 	const std::lock_guard<std::mutex> lock(i2c_mutex);
 
-	if (write_comm == true && num_of_bytes > 6)
+	if (write_comm == true && num_of_bytes > 16)
 	{
 		printf("Writing >6 bytes not supported yet");
 		return -9;
 	}
 	assert(recv_buff != nullptr);
 
-	uint8_t buff[8];
+	uint8_t buff[18];
 
 	buff[0] = register_address;
 
