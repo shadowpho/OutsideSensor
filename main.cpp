@@ -56,19 +56,76 @@ const int COMMIT_TO_ONLINE=60;
 
 #define SQL_DB_PATH  "inside_sensor.db"
 
+void RUN_EVERY_MS(auto start, int duration_MS) 
+{
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<float> diff = end - start;
+	int sleep_time = duration_MS - std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+	if(sleep_time>0)
+		sleep_ms(sleep_time);
+}
 
 void temp_pressure_loop(CMA_Data *obj)
 {
 	while (1)
 	{
+		auto start = std::chrono::steady_clock::now();
 		float t1=0, humidity, t2, pressure;
 #ifdef UNIT_OUTSIDE
 		read_from_hdc2080(&t1, &humidity);
 #endif 
 		read_from_BMP280(&t2, &pressure);
 		if(t1==0) t1=t2;
-		add_to_CMA(obj, (t1+t2)/2, humidity,pressure);
-		sleep_ms(650);
+		add_to_CMA(obj, (t1+t2)/2, humidity,pressure,0);
+		RUN_EVERY_MS(start,250);
+	}
+}
+
+void sfa_sgp_loop(CMA_Data *obj)
+{
+	while (1)
+	{
+		auto start = std::chrono::steady_clock::now();
+		float temp, humidity, hcho;
+		int voc;
+		sfa3x_read(&hcho, &temp,&humidity);
+		SGP40_read(temp,humidity,&voc);
+
+		add_to_CMA(obj, temp, humidity, hcho, (float)voc);
+		RUN_EVERY_MS(start,1000);
+	}
+}
+void sen5x_loop(CMA_Data *obj, CMA_Data *obj2)
+{
+	while (1)
+	{
+		auto start = std::chrono::steady_clock::now();
+		float pm1, pm2p5, hum, temp, VOC, NOX;
+		SEN5x_read(&pm1, &pm2p5, &hum, &temp, &VOC, &NOX);
+
+		add_to_CMA(obj, pm1, pm2p5, hum, 0);
+		add_to_CMA(obj2, temp, VOC, NOX,0);
+		RUN_EVERY_MS(start,1200);
+	}
+}
+void ADS1115_loop(CMA_Data *obj)
+{
+	while (1)
+	{
+		float voltage;
+		ads1115_read(&voltage);
+		add_to_CMA(obj, voltage,0,0,0);
+	}
+}
+void BME680_loop(CMA_Data *obj)
+{
+	return;
+	while (1)
+	{
+		auto start = std::chrono::steady_clock::now();
+		
+		//add_to_CMA(obj, temp, humidity, hcho, (float)voc);
+		RUN_EVERY_MS(start,1200);
 	}
 }
 #ifdef UNIT_OUTSIDE
@@ -192,7 +249,7 @@ int main()
 #endif
 
 #ifdef UNIT_INSIDE
-	CMA_Data temp_pressure_data, bmp280_data, ppm_data, sfa30_data, sgp40_data, bme680_data, ads1115_data;
+	CMA_Data bmp280_data, sen5x_data_1,sen5x_data_2, sfa30_sgp40_data, bme680_data, ads1115_data;
 #endif
 
 #ifdef UNIT_OUTSIDE
@@ -263,7 +320,7 @@ int main()
 	
 
 
-	return 0;
+	
 	sqlite3* DB;
 	int ret = sqlite3_open(SQL_DB_PATH, &DB);
 	if(ret)
@@ -311,11 +368,34 @@ int main()
 	std::thread ppm_thread(ppm_loop, &ppm_data);
 #endif
 
-	std::thread tmp_thread(temp_pressure_loop, &temp_pressure_data);
-	
-	
+
+	std::thread tmp_thread(temp_pressure_loop, &bmp280_data);
+	std::thread sfa_thread(sfa_sgp_loop, &sfa30_sgp40_data);
+	std::thread sen_thread(sen5x_loop, &sen5x_data_1,&sen5x_data_2);
+	std::thread ads_thread(ADS1115_loop, &ads1115_data);
+	std::thread bme_thread(BME680_loop, &bme680_data);
+	float voltage;
+	float pm1, pm2p5, hum_sen5x, temp_sen5x, VOC_sen5x, NOX;
+	float temp_bmp280, press; 
+	float temp_sfa, hum_sfa, hcho, voc_sgp;
+	printf("temp_sen5x, temp_bmp280, temp_sfa, hum_sen5x, hum_sfa,voltage,VOC_sen5x,voc_sgp,NOX,press,hcho,pm1, pm2p5\n");
+	while(1)
+	{
+
+		sleep_ms(3000); 
+		remove_CMA(&bmp280_data,&temp_bmp280,NULL,&press, NULL);
+		remove_CMA(&sfa30_sgp40_data,&temp_sfa,&hum_sfa,&hcho, &voc_sgp);
+		remove_CMA(&sen5x_data_1,&pm1,&pm2p5,&hum_sen5x,NULL);
+		remove_CMA(&sen5x_data_2,&temp_sen5x,&VOC_sen5x,&NOX, NULL);
+		remove_CMA(&ads1115_data,&voltage,NULL,NULL,NULL);
+		//remove_CMA(&bme680_data,NULL,NULL,NULL,NULL);
+		printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",temp_sen5x, temp_bmp280, temp_sfa, hum_sen5x, hum_sfa,voltage,VOC_sen5x,voc_sgp,NOX,press,hcho);
+
+
+	}
+	/*	
 	std::stringstream sql_transaction_string;
-	float temp, humidity, press, lux, ppm10, ppm25, ppm01;
+	//float temp, humidity, press, lux, ppm10, ppm25, ppm01;
 	int commit=0;
 	while (1)
 	{
@@ -323,9 +403,9 @@ int main()
 		sql_transaction_string << "INSERT INTO sensors VALUES(";
 		sleep_ms(COMMIT_EVERY_MS); 
 
-		remove_CMA(&temp_pressure_data,&temp,&humidity,&press);
+		remove_CMA(&bmp280_sgp40_data,&temp,&humidity,&press);
 #ifdef UNIT_OUTSIDE
-		remove_CMA(&light_data,&lux,nullptr,nullptr);
+		remove_CMA(&light_data,&lux,NULLptr,NULLptr);
 		remove_CMA(&ppm_data,&ppm10, &ppm25, &ppm01);
 #endif
 		std::time_t t= std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -388,5 +468,6 @@ int main()
 	}
 
 	sqlite3_close(DB);
+	*/
 	return 0;
 }

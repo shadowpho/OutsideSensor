@@ -2,6 +2,9 @@
 #include "sensirion_gas_index_algorithm.h"
 #include "i2c_helper.h"
 
+#define CRC8_INIT 0xFF
+#define CRC8_POLYNOMIAL 0x31
+
 #define SGP40_ADDR 0x59
 
 GasIndexAlgorithmParams voc_params;
@@ -29,7 +32,7 @@ int SGP40_start()
 {
     uint8_t buff[4];
     GasIndexAlgorithm_init(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC);
-    buff[1] = 0x0E ;
+    buff[0] = 0x0E;
     int rslt = communicate_I2C(SGP40_ADDR, true, 0x28 , buff, 1);
     if(rslt!=0)
     {
@@ -49,7 +52,7 @@ int SGP40_start()
 }
 
 //call this 1x a second
-int SGP40_read(float temp, float humidity, float* VOC)
+int SGP40_read(float temp, float humidity, int32_t* VOC)
 {
     uint16_t sraw_voc = 0;
     uint8_t buff[8];
@@ -63,7 +66,7 @@ int SGP40_read(float temp, float humidity, float* VOC)
     buff[2] =  (uint8_t) ((uint16_t)(humidity * 65535.0/100));
     buff[3] = sensirion_i2c_generate_crc((const uint8_t*)buff+1, 2);
     buff[4] = ((uint16_t)((temp + 45)*65535/175)) >> 8;
-    buff[5] = (uint8_t) ((uint16_t)((temp + 45)*65535/175))
+    buff[5] = (uint8_t) ((uint16_t)((temp + 45)*65535/175));
     buff[6] = sensirion_i2c_generate_crc((const uint8_t*)buff+4, 2);
     int rslt = communicate_I2C(SGP40_ADDR, true, 0x26 , buff, 7);
     if(rslt!=0)
@@ -78,6 +81,6 @@ int SGP40_read(float temp, float humidity, float* VOC)
     }
     sraw_voc = (uint16_t)buff[0] << 8 | (uint16_t)buff[1];
 
-    GasIndexAlgorithm_process(&voc_params, sraw_voc, &VOC);
+    GasIndexAlgorithm_process(&voc_params, sraw_voc, VOC);
     return 0;
 }

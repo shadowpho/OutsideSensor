@@ -31,12 +31,17 @@ int SEN5x_start()
 int SEN5x_read(float* pm1, float *pm2p5, float* hum, float* temp, float* VOC, float* NOX)
 {
     uint8_t buff[24];
-    uint8_t addr[2];
-    addr[0] = 0x03; addr[1] = 0xC4;
-    int rslt= write_read_I2C(SEN5x_ADDR, addr, 2, buff, 24);
+    buff[0] = 0xC4;
+    int rslt= communicate_I2C(SEN5x_ADDR,true,0x03,buff,1);
     if(rslt!=0)
     {
-        printf("Failed to GET measument with SEN5x %i\n",rslt); return rslt;
+        printf("Failed to send GET measument with SEN5x %i\n",rslt); return rslt;
+    }
+    sleep_ms(50);
+    rslt= read_I2C(SEN5x_ADDR,buff,24);
+    if(rslt!=0)
+    {
+        printf("Failed to retr measument with SEN5x %i\n",rslt); return rslt;
     }
     *pm1 =  ((uint16_t)buff[0] << 8 | buff[1]) / 10.0;
     *pm2p5 =  ((uint16_t)buff[3] << 8 | buff[4]) / 10.0;

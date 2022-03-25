@@ -9,11 +9,12 @@ struct CMA_Data
     double CMA_value1 = 0;   //moving average val1
     double CMA_value2 = 0;   //moving average val2 
     double CMA_value3 = 0;   //moving average val3
+    double CMA_value4 = 0;   //moving average val3
     uint32_t num_of_samples = 0;
 };
 
-void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3);
-void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3);
+void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3, float val4);
+void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3, float* val4);
 
 void sleep_ms(uint32_t sleep_ms);
 void sleep_us(uint32_t sleep_us);

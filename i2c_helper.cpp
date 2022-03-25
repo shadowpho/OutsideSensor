@@ -12,36 +12,44 @@
 static int file_i2c_handle = 0;
 static std::mutex i2c_mutex;
 
-void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3)
+void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3, float val4)
 {
 	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
 	struct_data->CMA_value1 += (double)val1;
 	struct_data->CMA_value2 += (double)val2;
 	struct_data->CMA_value3 += (double)val3;
+	struct_data->CMA_value4 += (double)val4;
 	struct_data->num_of_samples++;
 }
-void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3)
+void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3, float* val4)
 {
 	const std::lock_guard<std::mutex> lock(struct_data->data_mutex);
 	float ret_value1 = 0;
 	float ret_value2 = 0;
 	float ret_value3 = 0;
+	float ret_value4 = 0;
 	if (struct_data->num_of_samples != 0)
 	{
 		ret_value1 = struct_data->CMA_value1 / struct_data->num_of_samples;
 		ret_value2 = struct_data->CMA_value2 / struct_data->num_of_samples;
 		ret_value3 = struct_data->CMA_value3 / struct_data->num_of_samples;
+		ret_value4 = struct_data->CMA_value4 / struct_data->num_of_samples;
 	}
+	else 
+	printf("Underflow! not enough samples\n");
 	if(val1!=nullptr)
 		*val1 = ret_value1;
 	if(val2!=nullptr)
 		*val2 = ret_value2;
 	if(val3!=nullptr)
 		*val3 = ret_value3;	
+	if(val4!=nullptr)
+		*val4 = ret_value3;	
 	struct_data->num_of_samples = 0;
 	struct_data->CMA_value1 = 0;
 	struct_data->CMA_value2 = 0;
 	struct_data->CMA_value3 = 0;
+	struct_data->CMA_value4 = 0;
 }
 
 void sleep_ms(uint32_t sleep_ms)
@@ -81,7 +89,7 @@ int read_I2C(uint8_t device_address, uint8_t* recv_buff, int8_t num_of_bytes)
 
 	if (ioctl(file_i2c_handle, I2C_RDWR, &msgset) < 0)
 	{
-		perror("ioctl(I2C_RDWR) in i2c_comm");
+		perror("ioctl(I2C_RDWR) in read_i2c");
 		return -1;
 	}
 
@@ -165,7 +173,7 @@ int write_read_I2C(uint8_t device_address, uint8_t* write_buff, uint8_t num_writ
 
 	if (ioctl(file_i2c_handle, I2C_RDWR, &msgset) < 0)
 	{
-		perror("ioctl(I2C_RDWR) in i2c_comm");
+		perror("ioctl(I2C_RDWR) in i2c_read_write");
 		return -1;
 	}
 
