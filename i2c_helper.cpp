@@ -64,6 +64,31 @@ int setup_i2C()
 	return 0;
 }
 
+int read_I2C(uint8_t device_address, uint8_t* recv_buff, int8_t num_of_bytes)
+{
+	const std::lock_guard<std::mutex> lock(i2c_mutex);
+
+	struct i2c_msg msgs[1];
+	struct i2c_rdwr_ioctl_data msgset[1];
+
+	msgs[0].addr = device_address;
+	msgs[0].flags = I2C_M_RD;
+	msgs[0].len = num_of_bytes;
+	msgs[0].buf = recv_buff;
+
+	msgset[0].msgs = msgs;
+    msgset[0].nmsgs = 1;
+
+	if (ioctl(file_i2c_handle, I2C_RDWR, &msgset) < 0)
+	{
+		perror("ioctl(I2C_RDWR) in i2c_comm");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 //make sure recv is big enough!
 //NOTE: RASP PI DOES NOT SUPPORT I2C_M_NOSTART!!!!!
 int communicate_I2C(uint8_t device_address, bool write_comm, uint8_t register_address, uint8_t *recv_buff, int8_t num_of_bytes)
