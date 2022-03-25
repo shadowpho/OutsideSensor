@@ -6,7 +6,8 @@ find_package(Threads)
 find_package(SQLite3)
 find_library(PQXX_LIB pqxx)
 find_library(PQ_LIB pq)
-file(GLOB SOURCES *.cpp)
+file(GLOB SOURCES *.cpp BME680/*.cpp)
+
 
 include_directories(${SQLITE3_INCLUDE_DIRS})
 

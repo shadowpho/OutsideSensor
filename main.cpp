@@ -220,7 +220,7 @@ int main()
 	if (setup_BMP280() != 0)
 		return 2;
 	printf("BMP280 identified.\n");
-	return 3;
+
 	//XXX - GET AMBIENT FROM BMP280 AND PASS TO BME68x
 
     int8_t rslt = BME68X_OK;
@@ -261,6 +261,9 @@ int main()
 		return 8;
 	}
 	
+
+
+	return 0;
 	sqlite3* DB;
 	int ret = sqlite3_open(SQL_DB_PATH, &DB);
 	if(ret)
