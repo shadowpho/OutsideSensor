@@ -7,7 +7,7 @@
 
 #define SGP40_ADDR 0x59
 
-GasIndexAlgorithmParams voc_params;
+static GasIndexAlgorithmParams voc_params;
 
 uint8_t sensirion_i2c_generate_crc(const uint8_t* data, uint16_t count) {
     uint16_t current_byte;
