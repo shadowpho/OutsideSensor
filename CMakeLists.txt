@@ -10,6 +10,11 @@ file(GLOB SOURCE *.cpp BME680/*.cpp)
 file(GLOB_RECURSE OLED_WAVESHARE_SOURCE OLED_Waveshare/lib/*.c)
 
 include_directories(${SQLITE3_INCLUDE_DIRS})
+include_directories(OLED_Waveshare/lib/Config)
+include_directories(OLED_Waveshare/lib/Fonts)
+include_directories(OLED_Waveshare/lib/GUI)
+include_directories(OLED_Waveshare/lib/OLED)
+
 
 add_executable(OutsideSensor ${SOURCE} ${OLED_WAVESHARE_SOURCE})
 
@@ -18,3 +23,4 @@ target_link_libraries(OutsideSensor PRIVATE ${SQLite3_LIBRARIES})
 target_link_libraries(OutsideSensor PRIVATE ${SQLite3_LIBRARIES})
 target_link_libraries(OutsideSensor PRIVATE ${PQXX_LIB} ${PQ_LIB})
 target_link_libraries(OutsideSensor PRIVATE bcm2835)
+target_compile_definitions(OutsideSensor PRIVATE -DUSE_BCM2835_LIB)
