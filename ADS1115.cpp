@@ -33,7 +33,7 @@ int ads1115_read(float* voltage)
         rslt = communicate_I2C(ADS1115_ADDR,false,0x0,buff,2);
         if(rslt!=0) {printf("Failed to read results from ADS1115!!\n");return rslt;}
         result_voltage = (int16_t) ((uint16_t)buff[0] << 8 | buff[1]); 
-        if(buff[0] < 0xF8) break; 
+        if(buff[0] < 0x78) break; 
 
     }
     *voltage = ((double)result_voltage / 0x7FFF);

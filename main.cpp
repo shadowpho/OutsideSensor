@@ -22,14 +22,7 @@
 
 #include "password.h"
 
-//GUI
-extern "C"{
-#include "DEV_Config.h"
-#include "GUI_Paint.h"
-#include "GUI_BMPfile.h"
-#include "OLED_1in5_rgb.h"
-}
-
+#include "Display.h"
 /*
 	UNIT_INSIDE -- PMS7003, VEML7700, HDC2080, BMP280
 	UNIT_OUTSIDE -- OLED, BMP280, SGP40, BME680, MQ9B(ADS1115), SFA30, Sen5x
@@ -244,44 +237,12 @@ int per_row_callback(void* string_item, int argc, char** argv, char** column_nam
 
 int main()
 {
-	/*if(DEV_ModuleInit() != 0) 
+	if (display_init()!=0)
 	{
-		printf("Dev Module Info Fail!\n"); return -1;
+		printf("Display init fail!\n");
+		return -1;
 	}
-	OLED_1in5_rgb_Init();
 
-	DEV_Delay_ms(500);	
-	// 0.Create a new image cache
-	UBYTE *BlackImage;
-	UWORD Imagesize = (OLED_1in5_RGB_WIDTH*2) * OLED_1in5_RGB_HEIGHT;
-	if((BlackImage = (UBYTE *)malloc(Imagesize + 300)) == NULL) {
-			printf("Failed to apply for black memory...\r\n");
-			return -1;
-	}
-	printf("Paint_NewImage\r\n");
-	Paint_NewImage(BlackImage, OLED_1in5_RGB_WIDTH, OLED_1in5_RGB_HEIGHT, 0, BLACK);	
-	Paint_SetScale(65);
-	printf("Drawing\r\n");
-	//1.Select Image
-	Paint_SelectImage(BlackImage);
-	DEV_Delay_ms(500);
-	Paint_Clear(BLACK);
-	
-		
-		// 2.Drawing on the image		
-		printf("Drawing:page 1\r\n");
-		Paint_DrawPoint(20, 10, BLUE, DOT_PIXEL_1X1, DOT_STYLE_DFT);
-		Paint_DrawPoint(30, 10, BRED, DOT_PIXEL_2X2, DOT_STYLE_DFT);
-		Paint_DrawPoint(40, 10, GRED, DOT_PIXEL_3X3, DOT_STYLE_DFT);
-		Paint_DrawLine(10, 10, 10, 20, GBLUE, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-		Paint_DrawLine(20, 20, 20, 30, RED, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-		Paint_DrawLine(30, 30, 30, 40, MAGENTA, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
-		Paint_DrawLine(40, 40, 40, 50, GREEN, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
-		Paint_DrawCircle(60, 30, 15, CYAN, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-		Paint_DrawCircle(100, 40, 20, YELLOW, DOT_PIXEL_1X1, DRAW_FILL_FULL);			
-		Paint_DrawRectangle(50, 30, 60, 40, BROWN, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-		Paint_DrawRectangle(90, 30, 110, 50, BLACK, DOT_PIXEL_1X1, DRAW_FILL_FULL);		
-	*/
 	if (setup_i2C() != 0)
 	{
 		printf("Failed to open I2c file\n");
