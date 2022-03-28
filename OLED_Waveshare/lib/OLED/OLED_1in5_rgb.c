@@ -93,7 +93,7 @@ static void OLED_InitReg(void)
     OLED_WriteData(0x7F);
 
     OLED_WriteReg(0xa0);  //set re-map & data format
-    OLED_WriteData(0x74);     //Horizontal address increment
+    OLED_WriteData(0x66);     //Horizontal address increment 0x74 | 0x02 & (~0x10)
 
     OLED_WriteReg(0xa1);  //set display start line
     OLED_WriteData(0x00);     //start 00 line

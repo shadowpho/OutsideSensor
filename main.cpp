@@ -88,7 +88,7 @@ void sfa_sgp_loop(CMA_Data *obj)
 		float temp, humidity, hcho;
 		int voc;
 		sfa3x_read(&hcho, &temp,&humidity);
-		SGP40_read(temp,humidity,&voc);
+		SGP40_read(temp-6,humidity-6,&voc);
 
 		add_to_CMA(obj, temp, humidity, hcho, (float)voc);
 		RUN_EVERY_MS(start,1000);
@@ -286,13 +286,7 @@ int main()
 	//XXX - GET AMBIENT FROM BMP280 AND PASS TO BME68x
 
     int8_t rslt = BME68X_OK;
-    rslt = bme68x_selftest_check(&gas_sensor);
-	if(rslt==0)
-		printf("BME680 identified and pass self-test\n");
-	else{
-		printf("BME680 FAIL SELFTEST: %i\n",rslt);
-		return 5;
-	}
+  
 	
 	rslt = sfa3x_start();
 	if(rslt==0)
@@ -323,6 +317,14 @@ int main()
 		return 8;
 	}
 	
+
+	rslt = bme68x_selftest_check(&gas_sensor);
+	if(rslt==0)
+		printf("BME680 identified and pass self-test\n");
+	else{
+		printf("BME680 FAIL SELFTEST: %i\n",rslt);
+		return 5;
+	}
 
 
 	
@@ -395,7 +397,9 @@ int main()
 		remove_CMA(&ads1115_data,&voltage,NULL,NULL,NULL);
 		//remove_CMA(&bme680_data,NULL,NULL,NULL,NULL);
 		printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",temp_sen5x, temp_bmp280, temp_sfa, hum_sen5x, hum_sfa,voltage,VOC_sen5x,voc_sgp,NOX,press,hcho,pm1,pm2p5);
-
+		
+		float real_temp = (temp_sen5x + temp_bmp280) / 2.0;
+		display_data(real_temp,hum_sen5x,voltage,VOC_sen5x,voc_sgp,NOX,hcho,pm1);
 
 	}
 	/*	
