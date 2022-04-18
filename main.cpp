@@ -1,39 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <thread>
-#include <sqlite3.h> 
-#include <sstream>  
-#include <ctime>
-#include <iomanip>
-#include <iostream>
-#include <pqxx/pqxx>
-
-#include "SFA30x.h"
-#include "ADS1115.h"
-#include "SGP40.h"
-#include "SEN5x.h"
-#include "HDC2080.h"
-#include "BMP280.h"
-#include "VEML7700.h"
-#include "PMS7003.h"
-#include "i2c_helper.h"
-#include "BME680/bme68x.h"
-#include "BME680/bme68x_adapter.h"
-
-#include "password.h"
-
-#include "Display.h"
-/*
-	UNIT_INSIDE -- PMS7003, VEML7700, HDC2080, BMP280
-	UNIT_OUTSIDE -- OLED, BMP280, SGP40, BME680, MQ9B(ADS1115), SFA30, Sen5x
-				--  BMP280  P,T
-			        SGP40   VOC_Index(0-500), 
-					BME680  sIAQ, H,P,T, CO2eq,
-					MQ9B    voltage
-					SFA30   CH₂O ppb, H, T
-					Sen5x PM0.5 PM1 PM2.5 H, T, VocIndex, NoxIndex(1-500,100=average)
-*/
-
 //#define UNIT_OUTSIDE
 #define UNIT_INSIDE
 
@@ -51,9 +15,50 @@ const int COMMIT_EVERY_MS=10 * 1000;
 const int COMMIT_TO_ONLINE=60;
 #endif
 
-
-
 #define SQL_DB_PATH  "inside_sensor.db"
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <thread>
+#include <sstream>  
+#include <ctime>
+#include <iomanip>
+
+
+#include "SFA30x.h"
+#include "ADS1115.h"
+#include "SGP40.h"
+#include "SEN5x.h"
+#include "HDC2080.h"
+#include "BMP280.h"
+#include "VEML7700.h"
+#include "PMS7003.h"
+#include "i2c_helper.h"
+#include "BME680/bme68x.h"
+#include "BME680/bme68x_adapter.h"
+
+#include "password.h"
+
+#include "Display.h"
+
+using std::chrono::operator""ms;
+
+
+/*
+	UNIT_INSIDE -- PMS7003, VEML7700, HDC2080, BMP280
+	UNIT_OUTSIDE -- OLED, BMP280, SGP40, BME680, MQ9B(ADS1115), SFA30, Sen5x
+				--  BMP280  P,T
+			        SGP40   VOC_Index(0-500), 
+					BME680  sIAQ, H,P,T, CO2eq,
+					MQ9B    voltage
+					SFA30   CH₂O ppb, H, T
+					Sen5x PM0.5 PM1 PM2.5 H, T, VocIndex, NoxIndex(1-500,100=average)
+*/
+
+
+
+
 
 void RUN_EVERY_MS(auto start, int duration_MS) 
 {
@@ -76,7 +81,7 @@ void temp_pressure_loop(CMA_Data *obj)
 		read_from_BMP280(&t2, &pressure);
 		if(t1==0) t1=t2;
 		add_to_CMA(obj, (t1+t2)/2, humidity,pressure,0);
-		RUN_EVERY_MS(start,250);
+		std::this_thread::sleep_until(start + 250ms);
 	}
 }
 
@@ -160,6 +165,7 @@ void ppm_loop(CMA_Data *obj)
 	}
 }
 #endif 
+/*
 int per_row_callback(void* string_item, int argc, char** argv, char** column_name)
 {
 	if(string_item==NULL)
@@ -225,7 +231,7 @@ int per_row_callback(void* string_item, int argc, char** argv, char** column_nam
 			}
 			else if(i==1)
 				(*continuous_insert)+=DEVICEID;
-			else /*i!=1 or 0*/
+			else //i!=1 or 0
 				(*continuous_insert)+=argv[ordering[i]];
 			if(i!=8)
 				(*continuous_insert)+=",";
@@ -234,6 +240,7 @@ int per_row_callback(void* string_item, int argc, char** argv, char** column_nam
 	(*continuous_insert)+=") ON CONFLICT DO NOTHING;";
 	return 0; //success
 }
+*/
 
 int main()
 {
@@ -283,7 +290,7 @@ int main()
 		return 2;
 	printf("BMP280 identified.\n");
 
-	//XXX - GET AMBIENT FROM BMP280 AND PASS TO BME68x
+	//XXX BME68x
 
     int8_t rslt = BME68X_OK;
   
@@ -327,47 +334,6 @@ int main()
 	}
 
 
-	
-	sqlite3* DB;
-	int ret = sqlite3_open(SQL_DB_PATH, &DB);
-	if(ret)
-	{
-		printf("Unable to open DB!\n");
-		printf("Can't open database: %s\n", sqlite3_errmsg(DB));
-		return -50;
-	}
-#ifdef UNIT_OUTSIDE
-	const char* create_db = "CREATE TABLE IF NOT EXISTS sensors ("
-							"iso_date TEXT NOT NULL, "
-							"temp REAL NOT NULL, "
-							"pressure REAL NOT NULL, "
-							"humidity REAL NOT NULL, "
-							"lux REAL NOT NULL, "
-							"ppm1 REAL NOT NULL, "
-							"ppm25 REAL NOT NULL, "
-							"ppm10 REAL NOT NULL);";
-#endif 
-#ifdef UNIT_INSIDE
-	const char* create_db = "CREATE TABLE IF NOT EXISTS sensors ("
-							"iso_date TEXT NOT NULL, "
-							"temp REAL NOT NULL, "
-							"pressure REAL NOT NULL, "
-							"humidity REAL NOT NULL, "
-							"voc REAL NOT NULL, "
-							"ppm1 REAL NOT NULL, "
-							"ppm25 REAL NOT NULL, "
-							"ppm10 REAL NOT NULL);";
-#endif 
-	char* messageError;
-/* XXX
-
-	ret = sqlite3_exec(DB, create_db, NULL, 0, &messageError);
-	if (ret != SQLITE_OK) {
-        printf("Error Create Table! %s\n",messageError);
-        sqlite3_free(messageError);
-    }
-*/
-
 	sleep_ms(1000); //give time for everything to reset
 
 #ifdef UNIT_OUTSIDE
@@ -396,10 +362,12 @@ int main()
 		remove_CMA(&sen5x_data_2,&temp_sen5x,&VOC_sen5x,&NOX, NULL);
 		remove_CMA(&ads1115_data,&voltage,NULL,NULL,NULL);
 		//remove_CMA(&bme680_data,NULL,NULL,NULL,NULL);
-		printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",temp_sen5x, temp_bmp280, temp_sfa, hum_sen5x, hum_sfa,voltage,VOC_sen5x,voc_sgp,NOX,press,hcho,pm1,pm2p5);
+		//printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",temp_sen5x, temp_bmp280, temp_sfa, hum_sen5x, hum_sfa,voltage,VOC_sen5x,voc_sgp,NOX,press,hcho,pm1,pm2p5);
 		
 		float real_temp = (temp_sen5x + temp_bmp280) / 2.0;
-		display_data(real_temp,hum_sen5x,voltage,VOC_sen5x,voc_sgp,NOX,hcho,pm1);
+		float real_VOC = (VOC_sen5x + voc_sgp) / 2.0; 
+		display_data(real_temp,hum_sen5x,voltage,real_VOC,NOX,hcho,pm1);
+		//record_to_db
 
 	}
 	/*	
@@ -408,39 +376,7 @@ int main()
 	int commit=0;
 	while (1)
 	{
-		sql_transaction_string.str("");
-		sql_transaction_string << "INSERT INTO sensors VALUES(";
-		sleep_ms(COMMIT_EVERY_MS); 
-
-		remove_CMA(&bmp280_sgp40_data,&temp,&humidity,&press);
-#ifdef UNIT_OUTSIDE
-		remove_CMA(&light_data,&lux,NULLptr,NULLptr);
-		remove_CMA(&ppm_data,&ppm10, &ppm25, &ppm01);
-#endif
-		std::time_t t= std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-		sql_transaction_string << std::put_time(std::gmtime(&t), "\"%FT%TZ\"" );
-		sql_transaction_string << ",";
-		sql_transaction_string << temp << ",";
-		sql_transaction_string << press << ",";
-		sql_transaction_string << humidity << ",";
-		sql_transaction_string << lux << ",";
-		sql_transaction_string << ppm01 << ",";
-		sql_transaction_string << ppm25 << ",";
-		sql_transaction_string << ppm10 << ");";
-
-		//std::cout << sql_transaction_string.str() << std::endl;
-		ret = sqlite3_exec(DB, sql_transaction_string.str().c_str(), NULL, 0, &messageError);
-		if (ret != SQLITE_OK) {
-        	printf("Error INSERTING into Table! %s\n",messageError);
-        	sqlite3_free(messageError);
-			return -1;
-    	}
-		ret = sqlite3_db_cacheflush(DB);
-		if (ret != SQLITE_OK) {
-        	printf("Error FLUSHING into Table! %s\n",messageError);
-        	sqlite3_free(messageError);
-			return -3;
-    	}
+	
 		fflush(NULL);
 		commit++;
 		if(false)

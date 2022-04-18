@@ -54,18 +54,18 @@ void draw_row(const char* txt, float value, int row, float yellow_limit, float r
 
 }
 
-int display_data(float temp, float humidity, float voltage, float VOC_S, float VOC_SGP, float NOX, float hcho, float pm1)
+int display_data(float temp, float humidity, float voltage, float VOC, float NOX, float hcho, float pm1)
 {
     Paint_SelectImage(BlackImage);
     Paint_Clear(BLACK);
     draw_row("Temp:  %2.1f",temp,0,25,30);
-    draw_row("VOC1:   %3.0f",VOC_S,1,125,250);
-    draw_row("VOC2:   %3.0f",VOC_SGP,2,125,250);
-    draw_row("NOX:    %3.0f",NOX,3,125,250);
+    draw_row("Humid: %2.1f",humidity,1,120,120);
+    draw_row("VOC:    %3.0f",VOC,2,200,300);
+    draw_row("NOX:    %3.0f",NOX,3,100,150);
     draw_row("HCHO:   %3.0f",hcho,4,50,100);
     draw_row("pm1:    %3.0f",pm1,5,100,200);
-    draw_row("Methane:%1.1f",voltage,6,1.0,2.0);
-    draw_row("Humid: %2.1f",humidity,7,120,120);
+    draw_row("Methane:%1.1f",voltage,6,1.0,1.5);
+   
     OLED_1in5_rgb_Display(BlackImage);
     return 0;
 }

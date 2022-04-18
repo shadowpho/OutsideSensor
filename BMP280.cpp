@@ -55,6 +55,10 @@ int setup_BMP280()
 
     buff[1] = 0xB6; //SOFT RESET
     WRITE_BMP280(BMP280_RESET, buff, 1);
+    sleep_ms(5);
+    buff[0] = 0; //IIR off, no wait, 
+    WRITE_BMP280(BMP280_CONFIG,buff,1);
+
     return 0;
 }
 
@@ -71,8 +75,6 @@ int read_from_BMP280(float *temp, float *return_pressure)
     assert(temp!=nullptr);
     assert(return_pressure!=nullptr);
 
-    buff[0] = 0; //IIR off, no wait, 
-    WRITE_BMP280(BMP280_CONFIG,buff,1);
 
     buff[0] = 7<<5 | 7<<2 | 1; //  MAX OVERSAMPLING| forced mode 
     WRITE_BMP280(BMP280_CTRL_MEAS,buff,1);
