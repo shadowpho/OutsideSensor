@@ -733,7 +733,7 @@ int8_t bme68x_selftest_check(const struct bme68x_dev *dev)
     struct bme68x_heatr_conf heatr_conf;
 
     /* Copy required parameters from reference bme68x_dev struct */
-    t_dev.amb_temp = dev->amb_temp;
+    t_dev.amb_temp = 25;
     t_dev.read = dev->read;
     t_dev.write = dev->write;
     t_dev.intf = dev->intf;

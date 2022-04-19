@@ -85,3 +85,49 @@
     	}
 
 */
+
+/*
+int per_row_callback(void* string_item, int argc, char** argv, char** column_name)
+{
+	if(string_item==NULL)
+		return -1;
+	if(argc !=8)
+		return -2;
+	std::string *continuous_insert =  (std::string*)string_item;
+	(*continuous_insert)+="INSERT INTO rpi_sensor(time, sensor_id, temperature, pressure, humidity, light, ppm1, ppm25, ppm10) ";
+	(*continuous_insert)+="VALUES(";
+	int ordering[9];
+	for(int i=0;i<8;i++)
+		ordering[i]=-1;
+	ordering[1] = 55; //special
+	for(int i=0;i<argc;i++)
+	{
+		if (strcmp(column_name[i], "iso_date")==0)
+		{
+			ordering[0]=i;
+		}
+	
+	}
+		for(int i=0;i< (8 + 1);i++)
+		{
+			if(ordering[i]==-1)
+				return -98;
+
+			if(i==0)
+			{
+				(*continuous_insert)+="\'";
+				(*continuous_insert)+=argv[ordering[i]];
+				(*continuous_insert)+="\'";
+			}
+			else if(i==1)
+				(*continuous_insert)+=DEVICEID;
+			else //i!=1 or 0
+				(*continuous_insert)+=argv[ordering[i]];
+			if(i!=8)
+				(*continuous_insert)+=",";
+		}
+
+	(*continuous_insert)+=") ON CONFLICT DO NOTHING;";
+	return 0; //success
+}
+*/
