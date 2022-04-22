@@ -103,14 +103,14 @@ int communicate_I2C(uint8_t device_address, bool write_comm, uint8_t register_ad
 {
 	const std::lock_guard<std::mutex> lock(i2c_mutex);
 
-	if (write_comm == true && num_of_bytes > 16)
+	if (write_comm == true && num_of_bytes > 64)
 	{
-		printf("Writing >6 bytes not supported yet");
+		printf("Writing >64 bytes not supported yet");
 		return -9;
 	}
 	assert(recv_buff != nullptr);
 
-	uint8_t buff[18];
+	uint8_t buff[64];
 
 	buff[0] = register_address;
 

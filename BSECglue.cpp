@@ -13,6 +13,11 @@
 static struct bme68x_dev gas_sensor;
 int64_t next_call_ns;
 
+static int _rslt; 
+
+#define CHK_RTN_BSEC(x) _rslt = (x); if(_rslt!=0){printf("BSEC Error!%s, %i\n",#x,_rslt);return _rslt;}
+#define CHK_RTN_BME(x) _rslt = (x); if(_rslt!=0){printf("BME Error!%s, %i\n",#x,_rslt);return _rslt;}
+
 int BSEC_BME_selftest()
 {
     gas_sensor.intf = BME68X_I2C_INTF;
@@ -27,23 +32,19 @@ int BSEC_BME_selftest()
 int BSEC_BME_init()
 {
     next_call_ns = 0;
-    int ret = 0;
-    ret = bsec_init();
-    if (ret != 0)
-        return ret;
-     gas_sensor.intf = BME68X_I2C_INTF;
+    CHK_RTN_BSEC(bsec_init());
+
+    gas_sensor.intf = BME68X_I2C_INTF;
     gas_sensor.read = user_i2c_read;
     gas_sensor.write = user_i2c_write;
     gas_sensor.delay_us = user_delay_us;
     gas_sensor.amb_temp = 20;
-    ret = bme68x_init(&gas_sensor);
-    if (ret != 0)
-        return ret;
+    CHK_RTN_BME(bme68x_init(&gas_sensor));
+
     std::vector<uint8_t> work_buffer(BSEC_MAX_PROPERTY_BLOB_SIZE);
 
-    ret = bsec_set_configuration(bsec_config_iaq, BSEC_MAX_PROPERTY_BLOB_SIZE, work_buffer.data(), work_buffer.size());
-    if (ret != 0)
-        return ret;
+   CHK_RTN_BSEC(bsec_set_configuration(bsec_config_iaq, BSEC_MAX_PROPERTY_BLOB_SIZE, work_buffer.data(), work_buffer.size()));
+
 
     bsec_sensor_configuration_t requested_virtual_sensors[4];
     uint8_t n_requested_virtual_sensors = 4;
@@ -60,9 +61,8 @@ int BSEC_BME_init()
     bsec_sensor_configuration_t required_sensor_settings[BSEC_MAX_PHYSICAL_SENSOR];
     uint8_t n_required_sensor_settings = BSEC_MAX_PHYSICAL_SENSOR;
 
-    ret = bsec_update_subscription(requested_virtual_sensors, n_requested_virtual_sensors, required_sensor_settings, &n_required_sensor_settings);
-    if (ret != 0)
-        return ret;
+    CHK_RTN_BSEC(bsec_update_subscription(requested_virtual_sensors, n_requested_virtual_sensors, required_sensor_settings, &n_required_sensor_settings));
+
     return 0;
 }
 
@@ -72,10 +72,10 @@ int BSEC_BME_loop()
     int64_t now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     if(now < next_call_ns) return -1; //too early
 
-    int ret=0;
+
     bsec_bme_settings_t bme680_settings = {0};
-    ret = bsec_sensor_control(now,&bme680_settings);
-    if(ret!=0) return ret; 
+    CHK_RTN_BSEC(bsec_sensor_control(now,&bme680_settings));
+
     next_call_ns = bme680_settings.next_call; 
     if (bme680_settings.trigger_measurement!=1) 
         return 0;
@@ -84,8 +84,7 @@ int BSEC_BME_loop()
     new_conf.os_hum = bme680_settings.humidity_oversampling;
     new_conf.os_temp = bme680_settings.temperature_oversampling; 
     new_conf.os_pres = bme680_settings.pressure_oversampling;
-    ret = bme68x_set_conf(&new_conf,&gas_sensor);
-    if(ret!=0) return ret; 
+    CHK_RTN_BME(bme68x_set_conf(&new_conf,&gas_sensor));
 
     struct bme68x_heatr_conf heater_conf = {0};
     heater_conf.enable = bme680_settings.run_gas;
@@ -94,8 +93,8 @@ int BSEC_BME_loop()
     heater_conf.heatr_temp_prof = bme680_settings.heater_temperature_profile;
     heater_conf.heatr_dur_prof = bme680_settings.heater_duration_profile;
     heater_conf.profile_len = bme680_settings.heater_profile_len;
-    ret = bme68x_set_heatr_conf(bme680_settings.op_mode,&heater_conf,&gas_sensor);
-    if(ret!=0) return ret; 
+    heater_conf.shared_heatr_dur = 140 - (bme68x_get_meas_dur(bme680_settings.op_mode, &new_conf, &gas_sensor) / 1000);
+    CHK_RTN_BME(bme68x_set_heatr_conf(bme680_settings.op_mode,&heater_conf,&gas_sensor));
     
     //ret = bme68x_set_op_mode(bme680_settings.op_mode, &gas_sensor);
     //if(ret!=0) return ret; 
@@ -106,8 +105,8 @@ int BSEC_BME_loop()
     if(bme680_settings.process_data == 0 ) return 0;
     struct bme68x_data new_data; 
     uint8_t n_fields;
-    ret = bme68x_get_data(bme680_settings.op_mode,&new_data,&n_fields,&gas_sensor);
-    if(ret!=0) return 0;
+    CHK_RTN_BME(bme68x_get_data(bme680_settings.op_mode,&new_data,&n_fields,&gas_sensor));
+
     assert(new_data.status & BME68X_NEW_DATA_MSK);
 
     bsec_input_t input[3];
