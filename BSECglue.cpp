@@ -112,8 +112,8 @@ int BSEC_BME_loop()
 
     bsec_input_t input[3];
     uint8_t n_input = 3;
-    bsec_output_t output[4];
-    uint8_t n_output = 4;
+    bsec_output_t output[5];
+    uint8_t n_output = 5;
 
     bsec_library_return_t status;
     now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();

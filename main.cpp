@@ -124,7 +124,7 @@ void BME680_loop(CMA_Data *obj)
 		int ret = BSEC_BME_loop();
 		if(ret!=0)
 		{
-			printf("BME FAIL!!! %i",ret);
+			printf("BME FAIL!!! %i\n",ret);
 		}
 		// add_to_CMA(obj, temp, humidity, hcho, (float)voc);
 		RUN_EVERY_MS(start, 1200);
