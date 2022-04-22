@@ -27,7 +27,12 @@
 			"gui_paint.h": "c",
 			"iomanip": "cpp",
 			"chrono": "cpp",
-			"algorithm": "cpp"
+			"algorithm": "cpp",
+			"cassert": "cpp",
+			"istream": "c",
+			"ostream": "c",
+			"system_error": "c",
+			"condition_variable": "cpp"
 		}
 	}
 }

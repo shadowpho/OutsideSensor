@@ -121,7 +121,11 @@ void BME680_loop(CMA_Data *obj)
 	while (1)
 	{
 		auto start = std::chrono::steady_clock::now();
-		BSEC_BME_loop();
+		int ret = BSEC_BME_loop();
+		if(ret!=0)
+		{
+			printf("BME FAIL!!! %i",ret);
+		}
 		// add_to_CMA(obj, temp, humidity, hcho, (float)voc);
 		RUN_EVERY_MS(start, 1200);
 	}

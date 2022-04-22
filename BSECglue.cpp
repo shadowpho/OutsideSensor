@@ -10,9 +10,11 @@
 #include <vector>
 #include <chrono>
 
+static struct bme68x_dev gas_sensor;
+int64_t next_call_ns;
+
 int BSEC_BME_selftest()
 {
-    struct bme68x_dev gas_sensor;
     gas_sensor.intf = BME68X_I2C_INTF;
     gas_sensor.read = user_i2c_read;
     gas_sensor.write = user_i2c_write;
@@ -24,12 +26,12 @@ int BSEC_BME_selftest()
 
 int BSEC_BME_init()
 {
+    next_call_ns = 0;
     int ret = 0;
     ret = bsec_init();
     if (ret != 0)
         return ret;
-    struct bme68x_dev gas_sensor;
-    gas_sensor.intf = BME68X_I2C_INTF;
+     gas_sensor.intf = BME68X_I2C_INTF;
     gas_sensor.read = user_i2c_read;
     gas_sensor.write = user_i2c_write;
     gas_sensor.delay_us = user_delay_us;
@@ -68,44 +70,67 @@ int BSEC_BME_loop()
 {
     using namespace std::chrono;
     int64_t now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    if(now < 0) return 0; //XXX
+    if(now < next_call_ns) return -1; //too early
 
-    bsec_bme_settings_t bme680_settings;
-    bsec_sensor_control(now,&bme680_settings);
+    int ret=0;
+    bsec_bme_settings_t bme680_settings = {0};
+    ret = bsec_sensor_control(now,&bme680_settings);
+    if(ret!=0) return ret; 
+    next_call_ns = bme680_settings.next_call; 
+    if (bme680_settings.trigger_measurement!=1) 
+        return 0;
+    
+    struct bme68x_conf new_conf;
+    new_conf.os_hum = bme680_settings.humidity_oversampling;
+    new_conf.os_temp = bme680_settings.temperature_oversampling; 
+    new_conf.os_pres = bme680_settings.pressure_oversampling;
+    ret = bme68x_set_conf(&new_conf,&gas_sensor);
+    if(ret!=0) return ret; 
+
+    struct bme68x_heatr_conf heater_conf = {0};
+    heater_conf.enable = bme680_settings.run_gas;
+    heater_conf.heatr_temp= bme680_settings.heater_temperature;
+    heater_conf.heatr_dur = bme680_settings.heater_duration;
+    heater_conf.heatr_temp_prof = bme680_settings.heater_temperature_profile;
+    heater_conf.heatr_dur_prof = bme680_settings.heater_duration_profile;
+    heater_conf.profile_len = bme680_settings.heater_profile_len;
+    ret = bme68x_set_heatr_conf(bme680_settings.op_mode,&heater_conf,&gas_sensor);
+    if(ret!=0) return ret; 
+    
+    //ret = bme68x_set_op_mode(bme680_settings.op_mode, &gas_sensor);
+    //if(ret!=0) return ret; 
+
+    //XXX
+    sleep_ms(100);
+    //XXX
+    if(bme680_settings.process_data == 0 ) return 0;
+    struct bme68x_data new_data; 
+    uint8_t n_fields;
+    ret = bme68x_get_data(bme680_settings.op_mode,&new_data,&n_fields,&gas_sensor);
+    if(ret!=0) return 0;
+    assert(new_data.status & BME68X_NEW_DATA_MSK);
+
     bsec_input_t input[3];
     uint8_t n_input = 3;
     bsec_output_t output[4];
     uint8_t n_output = 4;
 
     bsec_library_return_t status;
-    float R=0,T=0,rH=0;
-    // Populate the input structs, assuming the we have timestamp (ts),
-    // gas sensor resistance (R), temperature (T), and humidity (rH) available
-    // as input variables
+    now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     input[0].sensor_id = BSEC_INPUT_GASRESISTOR;
-    input[0].signal = R;
+    input[0].signal = new_data.gas_resistance;
     input[0].time_stamp = now;
     input[1].sensor_id = BSEC_INPUT_TEMPERATURE;
-    input[1].signal = T;
+    input[1].signal = new_data.temperature;
     input[1].time_stamp = now;
     input[2].sensor_id = BSEC_INPUT_HUMIDITY;
-    input[2].signal = rH;
+    input[2].signal = new_data.humidity;
     input[2].time_stamp = now;
     status = bsec_do_steps(input, n_input, output, &n_output);
     assert(status == BSEC_OK);
     for (int i = 0; i < n_output; i++)
     {
-        switch (output[i].sensor_id)
-        {
-        case BSEC_OUTPUT_IAQ:
-            // Retrieve the IAQ results from output[i].signal
-            // and do something with the data
-            break;
-            // case BSEC_OUTPUT_AMBIENT_TEMPERATURE:
-            //  Retrieve the ambient temperature results from output[i].signal
-            //  and do something with the data
-            break;
-        }
+        printf("%i:%i\n",output[i].sensor_id,output[i].signal);
     }
     return 0;
 }
