@@ -80,7 +80,7 @@ int BSEC_BME_loop()
     if (bme680_settings.trigger_measurement!=1) 
         return 0;
     
-    struct bme68x_conf new_conf;
+    struct bme68x_conf new_conf = {0};
     new_conf.os_hum = bme680_settings.humidity_oversampling;
     new_conf.os_temp = bme680_settings.temperature_oversampling; 
     new_conf.os_pres = bme680_settings.pressure_oversampling;
@@ -96,12 +96,10 @@ int BSEC_BME_loop()
     heater_conf.shared_heatr_dur = 140 - (bme68x_get_meas_dur(bme680_settings.op_mode, &new_conf, &gas_sensor) / 1000);
     CHK_RTN_BME(bme68x_set_heatr_conf(bme680_settings.op_mode,&heater_conf,&gas_sensor));
     
-    //ret = bme68x_set_op_mode(bme680_settings.op_mode, &gas_sensor);
-    //if(ret!=0) return ret; 
-
-    //XXX
-    sleep_ms(100);
-    //XXX
+    CHK_RTN_BME(bme68x_set_op_mode(bme680_settings.op_mode, &gas_sensor));
+    
+    uint32_t del_period = bme68x_get_meas_dur(bme680_settings.op_mode, &new_conf, &gas_sensor) + (heatr_conf.shared_heatr_dur * 1000);
+    sleep_us(del_period);
     if(bme680_settings.process_data == 0 ) return 0;
     struct bme68x_data new_data; 
     uint8_t n_fields;
