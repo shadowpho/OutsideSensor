@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(OutsideSensor)
 add_compile_options("-std=c++20")
+add_compile_options("-ggdb3")
 find_package(Threads)
 find_package(SQLite3)
 find_library(PQXX_LIB pqxx)
