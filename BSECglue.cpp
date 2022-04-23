@@ -154,8 +154,8 @@ int BSEC_BME_loop(float* temp, float* pressure, float* humidity,float* VOC)
         printf("%i:%.2f,acc:%i\n",output[i].sensor_id,output[i].signal,output[i].accuracy);
         switch (output[i].sensor_id)
         {
-        case BSEC_OUTPUT_IAQ:
-            if(output[i].accuracy==3)
+        case BSEC_OUTPUT_STATIC_IAQ:
+            if(output[i].accuracy>=2)
                 *VOC=output[i].signal;
             break;
         case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
@@ -168,7 +168,7 @@ int BSEC_BME_loop(float* temp, float* pressure, float* humidity,float* VOC)
             *pressure=output[i].signal; 
             break;
         default:
-            printf("Invalid BSECBME case! %i",output[i].sensor_id);
+            printf("Invalid BSECBME case! %i\n",output[i].sensor_id);
             break;
         }
     }

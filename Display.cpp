@@ -1,5 +1,6 @@
 #include "Display.h"
 #include <assert.h>
+#include <ctime>
 
 UBYTE *BlackImage;
 
@@ -38,7 +39,7 @@ int display_init()
 
         return 0;
 }
-char buff[256];
+char buff[128];
 
 void draw_row(const char* txt, float value, int row, float yellow_limit, float red_limit)
 {
@@ -49,7 +50,7 @@ void draw_row(const char* txt, float value, int row, float yellow_limit, float r
         color = RED;
     else if(value > yellow_limit)
         color = YELLOW;
-    snprintf(buff,256, txt,value);
+    snprintf(buff,128, txt,value);
     Paint_DrawString_EN(0, row*16, buff, &Font16, BLACK, color);
 
 }
@@ -65,7 +66,15 @@ int display_data(float temp, float humidity, float voltage, float VOC, float NOX
     draw_row("HCHO:   %3.0f",hcho,4,50,100);
     draw_row("pm1:    %3.0f",pm1,5,100,200);
     draw_row("Methane:%1.1f",voltage,6,1.0,1.5);
-   
+
+    time_t rawtime;
+    struct tm * timeinfo;
+    time (&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime (buff,80,"%R %m/%d",timeinfo);
+    
+    Paint_DrawString_EN(0, 7*16, buff, &Font16, BLACK, BLUE);
     OLED_1in5_rgb_Display(BlackImage);
     return 0;
 }

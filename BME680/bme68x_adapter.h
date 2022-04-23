@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "../i2c_helper.h"
+
 
 //(*bme68x_read_fptr_t)
 signed char user_i2c_read(unsigned char reg_addr, unsigned char *reg_data, unsigned int length,void *intf_ptr)

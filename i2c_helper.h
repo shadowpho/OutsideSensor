@@ -3,10 +3,11 @@
 #include <cstdint>
 #include <mutex>
 #include <cstdarg>
+#include <cmath>
 
 
 #ifndef INVALID_VALUE
-#define INVALID_VALUE -999.9
+#define INVALID_VALUE std::nanf("")
 #endif
 
 struct CMA_Data

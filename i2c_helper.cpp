@@ -21,7 +21,7 @@ float mix_sensors(int arg_count, ...)
 	va_start(args, arg_count);
 	for (int i = 0; i < arg_count; ++i) {
 		float val = va_arg(args,double);
-		if(val!=INVALID_VALUE)
+		if(!std::isnan(val))
         	{
 				result += val;
 				good_count++;

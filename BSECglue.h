@@ -2,7 +2,7 @@
 
 #include "BME680/bme68x.h"
 
-#define INVALID_VALUE -999.9
+#include "i2c_helper.h"
 
 int BSEC_BME_init();
 
