@@ -1,0 +1,20 @@
+---
+BasedOnStyle: Mozilla
+AlignAfterOpenBracket: Align
+AlignEscapedNewlines: Left
+AlignOperands: 'true'
+AllowShortBlocksOnASingleLine: 'true'
+AllowShortCaseLabelsOnASingleLine: 'true'
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: 'true'
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+ColumnLimit: '120'
+ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+IndentWidth: '2'
+Language: Cpp
+ReflowComments: 'true'
+SortIncludes: 'true'
+...

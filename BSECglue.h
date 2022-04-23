@@ -6,7 +6,7 @@
 
 int BSEC_BME_init();
 
-int BSEC_BME_loop(float* temp, float* pressure, float* humidity,float* VOC );
+int BSEC_BME_loop(float *temp, float *pressure, float *humidity, float *VOC);
 
 int BSEC_BME_selftest();
 
