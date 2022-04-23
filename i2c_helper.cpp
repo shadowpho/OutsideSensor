@@ -9,8 +9,28 @@
 #include <errno.h>
 #include "i2c_helper.h"
 
+
 static int file_i2c_handle = 0;
 static std::mutex i2c_mutex;
+
+float mix_sensors(int arg_count, ...)
+{
+	float result=0;
+	int good_count=0;
+	std::va_list args;
+	va_start(args, arg_count);
+	for (int i = 0; i < arg_count; ++i) {
+		float val = va_arg(args,double);
+		if(val!=INVALID_VALUE)
+        	{
+				result += val;
+				good_count++;
+			}
+    }
+	va_end(args);
+	if(good_count==0) return INVALID_VALUE;
+	return result/good_count;
+}
 
 void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3, float val4)
 {
@@ -36,7 +56,9 @@ void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3, fl
 		ret_value4 = struct_data->CMA_value4 / struct_data->num_of_samples;
 	}
 	else 
-	printf("Underflow! not enough samples\n");
+	{
+		ret_value1=INVALID_VALUE; ret_value2=INVALID_VALUE; ret_value3=INVALID_VALUE,ret_value4=INVALID_VALUE; 
+	}
 	if(val1!=nullptr)
 		*val1 = ret_value1;
 	if(val2!=nullptr)

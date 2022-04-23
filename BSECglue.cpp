@@ -36,18 +36,18 @@ int BSEC_BME_init()
     gas_sensor.read = user_i2c_read;
     gas_sensor.write = user_i2c_write;
     gas_sensor.delay_us = user_delay_us;
-    gas_sensor.amb_temp = 20;
+    gas_sensor.amb_temp = 22;
     CHK_RTN_BME(bme68x_init(&gas_sensor));
 
     std::vector<uint8_t> work_buffer(BSEC_MAX_PROPERTY_BLOB_SIZE);
 
-   CHK_RTN_BSEC(bsec_set_configuration(bsec_config_selectivity, BSEC_MAX_PROPERTY_BLOB_SIZE, work_buffer.data(), work_buffer.size()));
+   CHK_RTN_BSEC(bsec_set_configuration(bsec_config_iaq, BSEC_MAX_PROPERTY_BLOB_SIZE, work_buffer.data(), work_buffer.size()));
 
 
     bsec_sensor_configuration_t requested_virtual_sensors[4];
     uint8_t n_requested_virtual_sensors = 4;
 
-    requested_virtual_sensors[3].sensor_id = BSEC_OUTPUT_IAQ;
+    requested_virtual_sensors[3].sensor_id = BSEC_OUTPUT_STATIC_IAQ;
     requested_virtual_sensors[3].sample_rate = BSEC_SAMPLE_RATE_LP;
     requested_virtual_sensors[1].sensor_id = BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE;
     requested_virtual_sensors[1].sample_rate = BSEC_SAMPLE_RATE_LP;
@@ -64,8 +64,15 @@ int BSEC_BME_init()
     return 0;
 }
 
-int BSEC_BME_loop()
+int BSEC_desired_sleep_us()
 {
+    using namespace std::chrono;
+    int64_t now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    return ((next_call_ns - now) / 1000)+1;
+}
+int BSEC_BME_loop(float* temp, float* pressure, float* humidity,float* VOC)
+{
+    *temp=INVALID_VALUE; *pressure=INVALID_VALUE; *humidity=INVALID_VALUE;*VOC=INVALID_VALUE;
     using namespace std::chrono;
     int64_t now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     if(now < next_call_ns) return -1; //too early
@@ -114,7 +121,7 @@ int BSEC_BME_loop()
         input[n_input].signal = new_data.gas_resistance;
         input[n_input].time_stamp = now;
         n_input++;
-        printf("gas:%f\n",new_data.gas_resistance);
+        //printf("gas:%f\n",new_data.gas_resistance);
     }
     if (bme680_settings.process_data & BSEC_PROCESS_TEMPERATURE) {
         input[n_input].sensor_id = BSEC_INPUT_TEMPERATURE;
@@ -122,17 +129,17 @@ int BSEC_BME_loop()
         input[n_input].time_stamp = now;
         n_input++;
         input[n_input].sensor_id = BSEC_INPUT_HEATSOURCE;
-        input[n_input].signal = 8.0f;
+        input[n_input].signal = 0.5f;
         input[n_input].time_stamp = now;
         n_input++;
-        printf("temp:%f\n",new_data.temperature );
+        //printf("temp:%f\n",new_data.temperature );
     }
     if (bme680_settings.process_data & BSEC_PROCESS_HUMIDITY) {
         input[n_input].sensor_id = BSEC_INPUT_HUMIDITY;
         input[n_input].signal = new_data.humidity ;
         input[n_input].time_stamp = now;
         n_input++;
-        printf("humidity:%f\n",new_data.humidity );
+        //printf("humidity:%f\n",new_data.humidity );
     }
     if (bme680_settings.process_data & BSEC_PROCESS_PRESSURE) {
         input[n_input].sensor_id = BSEC_INPUT_PRESSURE;
@@ -144,7 +151,26 @@ int BSEC_BME_loop()
     assert(status == BSEC_OK);
     for (int i = 0; i < n_output; i++)
     {
-        printf("%i:%.2f\n",output[i].sensor_id,output[i].signal);
+        printf("%i:%.2f,acc:%i\n",output[i].sensor_id,output[i].signal,output[i].accuracy);
+        switch (output[i].sensor_id)
+        {
+        case BSEC_OUTPUT_IAQ:
+            if(output[i].accuracy==3)
+                *VOC=output[i].signal;
+            break;
+        case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
+            *temp=output[i].signal; 
+            break;
+        case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY:
+            *humidity=output[i].signal;
+            break;
+        case BSEC_OUTPUT_RAW_PRESSURE:
+            *pressure=output[i].signal; 
+            break;
+        default:
+            printf("Invalid BSECBME case! %i",output[i].sensor_id);
+            break;
+        }
     }
     return 0;
 }

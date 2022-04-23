@@ -86,7 +86,7 @@ void sfa_sgp_loop(CMA_Data *obj)
 		float temp, humidity, hcho;
 		int voc;
 		sfa3x_read(&hcho, &temp, &humidity);
-		SGP40_read(temp - 6, humidity - 6, &voc);
+		SGP40_read(temp - 6, humidity + 6, &voc);
 
 		add_to_CMA(obj, temp, humidity, hcho, (float)voc);
 		RUN_EVERY_MS(start, 1000);
@@ -114,20 +114,24 @@ void ADS1115_loop(CMA_Data *obj)
 		add_to_CMA(obj, voltage, 0, 0, 0);
 	}
 }
-void BME680_loop(CMA_Data *obj)
+void BME680_loop(CMA_Data *obj,CMA_Data *obj2)
 {
 	BSEC_BME_init();
-	
+	float temp,pressure,humidity,VOC;
 	while (1)
 	{
-		auto start = std::chrono::steady_clock::now();
-		int ret = BSEC_BME_loop();
+		int ret = BSEC_BME_loop(&temp, &pressure, &humidity, &VOC);
 		if(ret!=0)
 		{
-			printf("BME LOOP FAIL!!! %i\n",ret);
+			printf("BME/BSEC LOOP FAIL!!! %i\n",ret);
 		}
-		// add_to_CMA(obj, temp, humidity, hcho, (float)voc);
-		RUN_EVERY_MS(start, 1200);
+		if(temp!=INVALID_VALUE)
+			add_to_CMA(obj, temp, pressure, humidity, 0);
+		if(VOC!=INVALID_VALUE)
+			add_to_CMA(obj2, VOC, 0,0,0);
+		sleep_us(BSEC_desired_sleep_us());
+		
+
 	}
 }
 #ifdef UNIT_OUTSIDE
@@ -184,7 +188,7 @@ int main()
 #endif
 
 #ifdef UNIT_INSIDE
-	CMA_Data bmp280_data, sen5x_data_1, sen5x_data_2, sfa30_sgp40_data, bme680_data, ads1115_data;
+	CMA_Data bmp280_data, sen5x_data_1, sen5x_data_2, sfa30_sgp40_data, bme680_dat1,bme680_dat2, ads1115_data;
 #endif
 
 #ifdef UNIT_OUTSIDE
@@ -255,27 +259,31 @@ int main()
 	std::thread sfa_thread(sfa_sgp_loop, &sfa30_sgp40_data);
 	std::thread sen_thread(sen5x_loop, &sen5x_data_1, &sen5x_data_2);
 	std::thread ads_thread(ADS1115_loop, &ads1115_data);
-	std::thread bme_thread(BME680_loop, &bme680_data);
+	std::thread bme_thread(BME680_loop, &bme680_dat1,&bme680_dat2);
 	float voltage;
 	float pm1, pm2p5, hum_sen5x, temp_sen5x, VOC_sen5x, NOX;
 	float temp_bmp280, press;
 	float temp_sfa, hum_sfa, hcho, voc_sgp;
-	printf("temp_sen5x, temp_bmp280, temp_sfa, hum_sen5x, hum_sfa,voltage,VOC_sen5x,voc_sgp,NOX,press,hcho,pm1, pm2p5\n");
+	float bme680_t, bme680_p, bme680_h, bme680_voc;
+	printf("temp_sen5x, temp_bmp280, temp_sfa,bme680_t, hum_sen5x, hum_sfa,bme680_h, voltage,VOC_sen5x,voc_sgp,bme680_voc,NOX,press,bme680_p,hcho,pm1,pm2p5\n");
 	while (1)
 	{
 
-		sleep_ms(3000);
+		sleep_ms(3100);
 		remove_CMA(&bmp280_data, &temp_bmp280, NULL, &press, NULL);
 		remove_CMA(&sfa30_sgp40_data, &temp_sfa, &hum_sfa, &hcho, &voc_sgp);
 		remove_CMA(&sen5x_data_1, &pm1, &pm2p5, &hum_sen5x, NULL);
 		remove_CMA(&sen5x_data_2, &temp_sen5x, &VOC_sen5x, &NOX, NULL);
 		remove_CMA(&ads1115_data, &voltage, NULL, NULL, NULL);
-		// remove_CMA(&bme680_data,NULL,NULL,NULL,NULL);
-		// printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",temp_sen5x, temp_bmp280, temp_sfa, hum_sen5x, hum_sfa,voltage,VOC_sen5x,voc_sgp,NOX,press,hcho,pm1,pm2p5);
+		remove_CMA(&bme680_dat1, &bme680_t, &bme680_p, &bme680_h, NULL);
+		remove_CMA(&bme680_dat2, &bme680_voc, NULL, NULL, NULL);
+		printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",temp_sen5x, temp_bmp280, temp_sfa,bme680_t, hum_sen5x, hum_sfa,bme680_h, voltage,VOC_sen5x,voc_sgp,bme680_voc,NOX,press,bme680_p,hcho,pm1,pm2p5);
 
-		float real_temp = (temp_sen5x + temp_bmp280) / 2.0;
-		float real_VOC = (VOC_sen5x + voc_sgp) / 2.0;
-		display_data(real_temp, hum_sen5x, voltage, real_VOC, NOX, hcho, pm1);
+		float real_temp = mix_sensors(3,temp_sen5x,temp_bmp280,bme680_t);
+		float real_VOC = mix_sensors(3,VOC_sen5x,voc_sgp, bme680_voc);
+		float real_hum = mix_sensors(2,hum_sen5x, bme680_h);
+		float real_pressure = mix_sensors(2,press, bme680_p);
+		display_data(real_temp, real_hum, voltage, real_VOC, NOX, hcho, pm1);
 		// record_to_db
 	}
 	/*

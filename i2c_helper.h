@@ -2,6 +2,12 @@
 
 #include <cstdint>
 #include <mutex>
+#include <cstdarg>
+
+
+#ifndef INVALID_VALUE
+#define INVALID_VALUE -999.9
+#endif
 
 struct CMA_Data
 {
@@ -15,6 +21,8 @@ struct CMA_Data
 
 void add_to_CMA(CMA_Data *struct_data, float val1, float val2, float val3, float val4);
 void remove_CMA(CMA_Data *struct_data, float* val1, float* val2, float* val3, float* val4);
+
+float mix_sensors(int arg_count,...);
 
 void sleep_ms(uint32_t sleep_ms);
 void sleep_us(uint32_t sleep_us);

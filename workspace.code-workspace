@@ -33,7 +33,8 @@
 			"ostream": "c",
 			"system_error": "c",
 			"condition_variable": "cpp",
-			"bme68x.h": "c"
+			"bme68x.h": "c",
+			"cstdarg": "cpp"
 		}
 	}
 }
