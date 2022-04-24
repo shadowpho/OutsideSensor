@@ -14,7 +14,7 @@ static int file_i2c_handle = 0;
 static std::mutex i2c_mutex;
 
 // Call like "mix_sensors({1.0f, 2.0f, xyz})"
-float mix_sensors(std::span<const float> args)
+float mix_sensors(std::initializer_list<float> args)
 {
   float result = 0;
   int good_count = 0;

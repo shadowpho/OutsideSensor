@@ -23,7 +23,7 @@ struct CMA_Data
 void add_to_CMA(CMA_Data* struct_data, float val1, float val2, float val3, float val4);
 void remove_CMA(CMA_Data* struct_data, float* val1, float* val2, float* val3, float* val4);
 
-float mix_sensors(std::span<const float> args);
+float mix_sensors(std::initializer_list<float> args);
 
 void sleep_ms(uint32_t sleep_ms);
 void sleep_us(uint32_t sleep_us);
