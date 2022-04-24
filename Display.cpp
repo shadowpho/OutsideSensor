@@ -67,12 +67,10 @@ int display_data(float temp, float humidity, float voltage, float VOC, float NOX
     draw_row("pm1:    %3.0f",pm1,5,100,200);
     draw_row("Methane:%1.1f",voltage,6,1.0,1.5);
 
-    time_t rawtime;
-    struct tm * timeinfo;
-    time (&rawtime);
-    timeinfo = localtime(&rawtime);
 
-    strftime (buff,80,"%R %m/%d",timeinfo);
+    std::time_t t = std::time(nullptr);
+    std::strftime(buff, 80, "%R %m/%d", std::localtime(&t));
+
     
     Paint_DrawString_EN(0, 7*16, buff, &Font16, BLACK, BLUE);
     OLED_1in5_rgb_Display(BlackImage);
