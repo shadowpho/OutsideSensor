@@ -61,7 +61,7 @@ int BSEC_BME_init()
   bsec_sensor_configuration_t requested_virtual_sensors[4];
   uint8_t n_requested_virtual_sensors = 4;
 
-  requested_virtual_sensors[3].sensor_id = BSEC_OUTPUT_STATIC_IAQ;
+  requested_virtual_sensors[3].sensor_id = BSEC_OUTPUT_IAQ;
   requested_virtual_sensors[3].sample_rate = BSEC_SAMPLE_RATE_LP;
   requested_virtual_sensors[1].sensor_id = BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE;
   requested_virtual_sensors[1].sample_rate = BSEC_SAMPLE_RATE_LP;
@@ -83,7 +83,9 @@ int BSEC_desired_sleep_us()
 {
   using namespace std::chrono;
   int64_t now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  return ((next_call_ns - now) / 1000) + 1;
+  if(next_call_ns <= now) 
+    return 0;
+  return ((next_call_ns - now) / 1000) + 3;
 }
 int BSEC_BME_loop(float* temp, float* pressure, float* humidity, float* VOC)
 {
@@ -93,12 +95,18 @@ int BSEC_BME_loop(float* temp, float* pressure, float* humidity, float* VOC)
   *VOC = INVALID_VALUE;
   using namespace std::chrono;
   int64_t now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  if (now < next_call_ns) return -1; // too early
-
+  if (now < next_call_ns) {
+    printf("BSECglue: call too early %lli < %lli\n",now, next_call_ns);
+    return -1; // too early
+  }
+  if(now >= next_call_ns + 1000000000)
+  {
+     printf("BSECglue: call too SLOW! %lli vs %lli\n",now, next_call_ns);
+  }
   bsec_bme_settings_t bme680_settings = { 0 };
   CHK_RTN_BSEC(bsec_sensor_control(now, &bme680_settings));
-
   next_call_ns = bme680_settings.next_call;
+
   if (bme680_settings.trigger_measurement != 1) return 0;
 
   struct bme68x_conf new_conf = { 0 };
@@ -108,6 +116,7 @@ int BSEC_BME_loop(float* temp, float* pressure, float* humidity, float* VOC)
   CHK_RTN_BME(bme68x_set_conf(&new_conf, &gas_sensor));
 
   struct bme68x_heatr_conf heater_conf = { 0 };
+
   heater_conf.enable = bme680_settings.run_gas;
   heater_conf.heatr_temp = bme680_settings.heater_temperature;
   heater_conf.heatr_dur = bme680_settings.heater_duration;
@@ -118,11 +127,11 @@ int BSEC_BME_loop(float* temp, float* pressure, float* humidity, float* VOC)
   CHK_RTN_BME(bme68x_set_heatr_conf(bme680_settings.op_mode, &heater_conf, &gas_sensor));
 
   CHK_RTN_BME(bme68x_set_op_mode(bme680_settings.op_mode, &gas_sensor));
+
   if (bme680_settings.process_data == 0) return 0;
   uint32_t del_period =
     bme68x_get_meas_dur(bme680_settings.op_mode, &new_conf, &gas_sensor) + (heater_conf.shared_heatr_dur * 1000);
-  sleep_us(del_period);
-  sleep_ms(100);
+  sleep_us(del_period+100000);
   struct bme68x_data new_data;
   uint8_t n_fields;
   CHK_RTN_BME(bme68x_get_data(bme680_settings.op_mode, &new_data, &n_fields, &gas_sensor));
@@ -167,9 +176,10 @@ int BSEC_BME_loop(float* temp, float* pressure, float* humidity, float* VOC)
   bsec_library_return_t status = bsec_do_steps(input, n_input, output, &n_output);
   assert(status == BSEC_OK);
   for (int i = 0; i < n_output; i++) {
-    printf("%i:%.2f,acc:%i\n", output[i].sensor_id, output[i].signal, output[i].accuracy);
+    //printf("%i:%.2f,acc:%i\n", output[i].sensor_id, output[i].signal, output[i].accuracy);
     switch (output[i].sensor_id) {
       case BSEC_OUTPUT_STATIC_IAQ:
+      case BSEC_OUTPUT_IAQ:
         if (output[i].accuracy >= 2) *VOC = output[i].signal;
         break;
       case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE: *temp = output[i].signal; break;
