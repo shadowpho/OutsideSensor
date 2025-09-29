@@ -15,7 +15,7 @@ const int COMMIT_EVERY_MS = 10 * 1000;
 const int COMMIT_TO_ONLINE = 60;
 #endif
 
-#define SQL_DB_PATH "inside_sensor.db"
+
 
 #include <ctime>
 #include <iomanip>
@@ -35,9 +35,10 @@ const int COMMIT_TO_ONLINE = 60;
 #include "VEML7700.h"
 #include "i2c_helper.h"
 
-#include "password.h"
-
+//#include "password.h"
 #include "Display.h"
+#include "DB.h"
+
 
 using std::chrono::operator""ms;
 
@@ -235,7 +236,7 @@ int main()
          "voltage,VOC_sen5x,voc_sgp,bme680_voc,NOX,press,bme680_p,hcho,pm1,pm2p5\n");
   while (1) {
 
-    sleep_ms(3100);
+    sleep_ms(COMMIT_EVERY_MS);
     remove_CMA(&bmp280_data, &temp_bmp280, NULL, &press, NULL);
     remove_CMA(&sfa30_sgp40_data, &temp_sfa, &hum_sfa, &hcho, &voc_sgp);
     remove_CMA(&sen5x_data_1, &pm1, &pm2p5, &hum_sen5x, NULL);
@@ -267,7 +268,7 @@ int main()
     float real_hum = mix_sensors({ hum_sen5x, bme680_h });
     float real_pressure = mix_sensors({ press, bme680_p });
     display_data(real_temp, real_hum, voltage, real_VOC, NOX, hcho, pm1);
-    // record_to_db
+    record_to_db(real_temp,real_VOC, voltage, real_hum, real_pressure, NOX, hcho, pm1);
   }
   /*
   std::stringstream sql_transaction_string;

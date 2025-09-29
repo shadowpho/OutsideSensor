@@ -3,4 +3,4 @@
 
 //int setup_DB();
 
-//int record_to_db();
+void record_to_db(float real_temp, float real_VOC, float voltage_methane, float real_hum, float real_pressure,  float NOX, float hcho, float pm1);
