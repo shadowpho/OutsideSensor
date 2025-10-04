@@ -116,6 +116,7 @@ void BME680_loop(CMA_Data* obj, CMA_Data* obj2)
   while (1) {
     int ret = BSEC_BME_loop(&temp, &pressure, &humidity, &VOC);
     if (ret != 0) { printf("BME/BSEC LOOP FAIL!!! %i\n", ret); }
+    if(ret==100) {BSEC_BME_init();}
     if (!std::isnan(temp)) add_to_CMA(obj, temp, pressure, humidity, 0);
     if (!std::isnan(VOC)) add_to_CMA(obj2, VOC, 0, 0, 0);
     sleep_us(BSEC_desired_sleep_us());
@@ -244,7 +245,7 @@ int main()
     remove_CMA(&ads1115_data, &voltage, NULL, NULL, NULL);
     remove_CMA(&bme680_dat1, &bme680_t, &bme680_p, &bme680_h, NULL);
     remove_CMA(&bme680_dat2, &bme680_voc, NULL, NULL, NULL);
-    printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+    /*printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
            temp_sen5x,
            temp_bmp280,
            temp_sfa,
@@ -262,7 +263,7 @@ int main()
            hcho,
            pm1,
            pm2p5);
-
+  */
     float real_temp = mix_sensors({ temp_sen5x, temp_bmp280, bme680_t });
     float real_VOC = mix_sensors({ VOC_sen5x, voc_sgp, bme680_voc });
     float real_hum = mix_sensors({ hum_sen5x, bme680_h });

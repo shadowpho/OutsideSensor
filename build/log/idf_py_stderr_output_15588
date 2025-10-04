@@ -1,0 +1,43 @@
+Command: cmake -G Ninja -DPYTHON_DEPS_CHECKED=1 -DPYTHON=C:\Users\shado\.espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe -DESP_PLATFORM=1 -DSDKCONFIG='e:\Programming\OutsideSensor\sdkconfig' -DCCACHE_ENABLE=1 E:\Programming\OutsideSensor
+CMake Error at C:/Users/shado/.espressif/tools/cmake/3.30.2/share/cmake-3.30/Modules/CMakeTestCCompiler.cmake:67 (message):
+  The C compiler
+
+    "C:/Users/shado/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clang.exe"
+
+  is not able to compile a simple test program.
+
+  It fails with the following output:
+
+    Change Dir: 'E:/Programming/OutsideSensor/build/CMakeFiles/CMakeScratch/TryCompile-d1v8qc'
+    
+    Run Build Command(s): C:/Users/shado/.espressif/tools/ninja/1.12.1/ninja.exe -v cmTC_abf37
+    [1/2] C:\Users\shado\.espressif\tools\esp-clang\esp-19.1.2_20250312\esp-clang\bin\clang.exe    -MD -MT CMakeFiles/cmTC_abf37.dir/testCCompiler.c.obj -MF CMakeFiles\cmTC_abf37.dir\testCCompiler.c.obj.d -o CMakeFiles/cmTC_abf37.dir/testCCompiler.c.obj -c E:/Programming/OutsideSensor/build/CMakeFiles/CMakeScratch/TryCompile-d1v8qc/testCCompiler.c
+    [2/2] C:\Windows\system32\cmd.exe /C "cd . && C:\Users\shado\.espressif\tools\esp-clang\esp-19.1.2_20250312\esp-clang\bin\clang.exe   CMakeFiles/cmTC_abf37.dir/testCCompiler.c.obj -o cmTC_abf37.exe -Wl,--out-implib,libcmTC_abf37.dll.a -Wl,--major-image-version,0,--minor-image-version,0  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 && cd ."
+    FAILED: cmTC_abf37.exe 
+    C:\Windows\system32\cmd.exe /C "cd . && C:\Users\shado\.espressif\tools\esp-clang\esp-19.1.2_20250312\esp-clang\bin\clang.exe   CMakeFiles/cmTC_abf37.dir/testCCompiler.c.obj -o cmTC_abf37.exe -Wl,--out-implib,libcmTC_abf37.dll.a -Wl,--major-image-version,0,--minor-image-version,0  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 && cd ."
+    ld.lld: error: unknown argument '--major-image-version'
+    ld.lld: error: unknown argument '--minor-image-version'
+    ld.lld: error: cannot open 0: No such file or directory
+    ld.lld: error: cannot open 0: No such file or directory
+    ld.lld: error: unable to find library -lkernel32
+    ld.lld: error: unable to find library -luser32
+    ld.lld: error: unable to find library -lgdi32
+    ld.lld: error: unable to find library -lwinspool
+    ld.lld: error: unable to find library -lshell32
+    ld.lld: error: unable to find library -lole32
+    ld.lld: error: unable to find library -loleaut32
+    ld.lld: error: unable to find library -luuid
+    ld.lld: error: unable to find library -lcomdlg32
+    ld.lld: error: unable to find library -ladvapi32
+    clang: error: ld command failed with exit code 1 (use -v to see invocation)
+    ninja: build stopped: subcommand failed.
+    
+    
+
+  
+
+  CMake will not be able to correctly generate this project.
+Call Stack (most recent call first):
+  CMakeLists.txt:3 (project)
+
+

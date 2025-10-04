@@ -46,10 +46,10 @@ void draw_row(const char* txt, float value, int row, float yellow_limit, float r
     assert(row>=0);
     assert(row<8);
     uint16_t color = GREEN;
-    if(value > red_limit)
-        color = RED;
-    else if(value > yellow_limit)
-        color = YELLOW;
+    //if(value > red_limit)
+    //    color = RED;
+    //else if(value > yellow_limit)
+    //    color = YELLOW;
     snprintf(buff,128, txt,value);
     Paint_DrawString_EN(0, row*16, buff, &Font16, BLACK, color);
 

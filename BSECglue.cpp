@@ -3,9 +3,8 @@
 
 #include "BME680/bme68x_adapter.h"
 
+#include "BSEC/bsec_iaq.h"
 #include "BSEC/bsec_interface.h"
-#include "BSEC/bsec_serialized_configurations_iaq.h"
-#include "BSEC/bsec_serialized_configurations_selectivity.h"
 
 #include <chrono>
 #include <vector>
