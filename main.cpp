@@ -277,6 +277,7 @@ int main()
     if(loop++ > SAVE_EVERY_LOOP)
     {
       flushDB();
+      loop=0;
     }
   }
   /*
