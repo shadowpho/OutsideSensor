@@ -11,8 +11,8 @@ const int COMMIT_TO_ONLINE = 10;
 
 #ifdef UNIT_INSIDE
 const char* DEVICEID = "104";
-const int COMMIT_EVERY_MS = 10 * 1000;
-const int COMMIT_TO_ONLINE = 60;
+const int CAPTURE_EVERY_MS = 10 * 1000;
+const int SAVE_EVERY_LOOP = 6*10;
 #endif
 
 
@@ -217,6 +217,8 @@ int main()
   }
 
   sleep_ms(1000); // give time for everything to reset
+  openDB();
+  atexit(closeDB);
 
 #ifdef UNIT_OUTSIDE
   std::thread lux_thread(light_loop, &light_data);
@@ -235,9 +237,10 @@ int main()
   float bme680_t, bme680_p, bme680_h, bme680_voc;
   printf("temp_sen5x, temp_bmp280, temp_sfa,bme680_t, hum_sen5x, hum_sfa,bme680_h, "
          "voltage,VOC_sen5x,voc_sgp,bme680_voc,NOX,press,bme680_p,hcho,pm1,pm2p5\n");
+  int loop=0;
   while (1) {
 
-    sleep_ms(COMMIT_EVERY_MS);
+    sleep_ms(CAPTURE_EVERY_MS);
     remove_CMA(&bmp280_data, &temp_bmp280, NULL, &press, NULL);
     remove_CMA(&sfa30_sgp40_data, &temp_sfa, &hum_sfa, &hcho, &voc_sgp);
     remove_CMA(&sen5x_data_1, &pm1, &pm2p5, &hum_sen5x, NULL);
@@ -270,6 +273,11 @@ int main()
     float real_pressure = mix_sensors({ press, bme680_p });
     display_data(real_temp, real_hum, voltage, real_VOC, NOX, hcho, pm1);
     record_to_db(real_temp,real_VOC, voltage, real_hum, real_pressure, NOX, hcho, pm1);
+
+    if(loop++ > SAVE_EVERY_LOOP)
+    {
+      flushDB();
+    }
   }
   /*
   std::stringstream sql_transaction_string;
