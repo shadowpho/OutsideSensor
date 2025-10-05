@@ -38,9 +38,10 @@
 							"pm1 REAL NOT NULL);";
 #endif 
 
-void record_to_db(float real_temp, float real_VOC, float voltage_methane, float real_hum, float real_pressure,  float NOX, float hcho, float pm1)
+static sqlite3* DB;
+
+void openDB()
 {
-	sqlite3* DB;
 	int ret = sqlite3_open(SQL_DB_PATH, &DB);
 	if(ret)
 	{
@@ -55,6 +56,29 @@ void record_to_db(float real_temp, float real_VOC, float voltage_methane, float 
         sqlite3_free(messageError);
 		return; 
     }
+	printf("DB Opened!\n");
+}
+void flushDB()
+{
+	int ret = sqlite3_db_cacheflush(DB);
+	if (ret != SQLITE_OK) {
+		printf("Error FLUSHING into Table!\n");
+		return;
+	}
+	printf("DB flushed!\n");
+}
+void closeDB()
+{
+	flushDB();
+	sqlite3_close(DB);
+	printf("DB closed!\n");
+}
+
+void record_to_db(float real_temp, float real_VOC, float voltage_methane, float real_hum, float real_pressure,  float NOX, float hcho, float pm1)
+{
+	
+	char* messageError;
+
 	std::stringstream sql_transaction_string;
 	sql_transaction_string.str("");
 	sql_transaction_string << "INSERT INTO sensors VALUES(";
@@ -69,15 +93,9 @@ void record_to_db(float real_temp, float real_VOC, float voltage_methane, float 
 		sql_transaction_string << hcho << ",";
 		sql_transaction_string << pm1 << ");";
 		//std::cout << sql_transaction_string.str() << std::endl;
-		ret = sqlite3_exec(DB, sql_transaction_string.str().c_str(), NULL, 0, &messageError);
+		int ret = sqlite3_exec(DB, sql_transaction_string.str().c_str(), NULL, 0, &messageError);
 		if (ret != SQLITE_OK) {
         	printf("Error INSERTING into Table! %s\n",messageError);
-        	sqlite3_free(messageError);
-			return;
-    	}
-		ret = sqlite3_db_cacheflush(DB);
-		if (ret != SQLITE_OK) {
-        	printf("Error FLUSHING into Table! %s\n",messageError);
         	sqlite3_free(messageError);
 			return;
     	}
