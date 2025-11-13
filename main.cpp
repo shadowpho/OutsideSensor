@@ -1,12 +1,12 @@
-//#define UNIT_OUTSIDE
-#define UNIT_INSIDE
+#define UNIT_OUTSIDE
+//#define UNIT_INSIDE
 
 #define db_password PASSWORD
 
 #ifdef UNIT_OUTSIDE
 const char* DEVICEID = "103";
-const int COMMIT_EVERY_MS = 60 * 1000;
-const int COMMIT_TO_ONLINE = 10;
+const int COMMIT_EVERY_MS = 60 * 1000; //commit every minute
+const int SAVE_EVERY_LOOP = 10;
 #endif
 
 #ifdef UNIT_INSIDE
@@ -43,8 +43,8 @@ const int SAVE_EVERY_LOOP = 6*10;
 using std::chrono::operator""ms;
 
 /*
-        UNIT_INSIDE -- PMS7003, VEML7700, HDC2080, BMP280
-        UNIT_OUTSIDE -- OLED, BMP280, SGP40, BME680, MQ9B(ADS1115), SFA30, Sen5x
+        UNIT_OUTSIDE -- PMS7003, VEML7700, HDC2080, BMP280
+        UNIT_INSIDE -- OLED, BMP280, SGP40, BME680, MQ9B(ADS1115), SFA30, Sen5x, 
                                 --  BMP280  P,T
                                         SGP40   VOC_Index(0-500),
                                         BME680  sIAQ, H,P,T, CO2eq,
@@ -154,10 +154,7 @@ void ppm_loop(CMA_Data* obj)
 
 int main()
 {
-  if (display_init() != 0) {
-    printf("Display init fail!\n");
-    return -1;
-  }
+
 
   if (setup_i2C() != 0) {
     printf("Failed to open I2c file\n");
@@ -165,25 +162,26 @@ int main()
   }
 
 #ifdef UNIT_OUTSIDE
-  CMA_Data temp_pressure_data, light_data, ppm_data;
+  CMA_Data bmp280_data, light_data, ppm_data;
+  if (setup_hdc2080() != 0) return 1;
+    printf("HDC2080 identified.\n");
+  if (setup_VEML7700() != 0) return 3;
+    printf("VEML7700 identified.\n");
+  setup_PMS7003();
 #endif
 
 #ifdef UNIT_INSIDE
   CMA_Data bmp280_data, sen5x_data_1, sen5x_data_2, sfa30_sgp40_data, bme680_dat1, bme680_dat2, ads1115_data;
-#endif
-
-#ifdef UNIT_OUTSIDE
-  if (setup_hdc2080() != 0) return 1;
-  printf("HDC2080 identified.\n");
-  if (setup_VEML7700() != 0) return 3;
-  printf("VEML7700 identified.\n");
-  setup_PMS7003();
+    if (display_init() != 0) {
+    printf("Display init fail!\n");
+    return -1;
+  }
 #endif
   // COMMON
   int8_t rslt = 0;
   if (setup_BMP280() != 0) return 2;
   printf("BMP280 identified.\n");
-
+#ifdef UNIT_INSIDE
   rslt = sfa3x_start();
   if (rslt == 0) printf("SFA30 identified\n");
   else {
@@ -215,6 +213,7 @@ int main()
     printf("BME680 FAIL SELFTEST: %i\n", rslt);
     return 5;
   }
+#endif
 
   sleep_ms(1000); // give time for everything to reset
   openDB();
@@ -225,30 +224,38 @@ int main()
   std::thread ppm_thread(ppm_loop, &ppm_data);
 #endif
 
+  //common
   std::thread tmp_thread(temp_pressure_loop, &bmp280_data);
+
+  #ifdef UNIT_INSIDE
   std::thread sfa_thread(sfa_sgp_loop, &sfa30_sgp40_data);
   std::thread sen_thread(sen5x_loop, &sen5x_data_1, &sen5x_data_2);
   std::thread ads_thread(ADS1115_loop, &ads1115_data);
   std::thread bme_thread(BME680_loop, &bme680_dat1, &bme680_dat2);
-  float voltage;
-  float pm1, pm2p5, hum_sen5x, temp_sen5x, VOC_sen5x, NOX;
-  float temp_bmp280, press;
+    printf("temp_sen5x, temp_bmp280, temp_sfa,bme680_t, hum_sen5x, hum_sfa,bme680_h, "
+         "voltage,VOC_sen5x,voc_sgp,bme680_voc,NOX,press,bme680_p,hcho,pm1,pm2p5\n");
+  #endif
+
+  float voltage, lux;
+  float pm10, pm1, pm2p5, hum_sen5x, temp_sen5x, VOC_sen5x, NOX;
+  float temp_bmp280, press, humidity;
   float temp_sfa, hum_sfa, hcho, voc_sgp;
   float bme680_t, bme680_p, bme680_h, bme680_voc;
-  printf("temp_sen5x, temp_bmp280, temp_sfa,bme680_t, hum_sen5x, hum_sfa,bme680_h, "
-         "voltage,VOC_sen5x,voc_sgp,bme680_voc,NOX,press,bme680_p,hcho,pm1,pm2p5\n");
+
   int loop=0;
   while (1) {
 
     sleep_ms(CAPTURE_EVERY_MS);
-    remove_CMA(&bmp280_data, &temp_bmp280, NULL, &press, NULL);
+    remove_CMA(&bmp280_data, &temp_bmp280, &humidity, &press, NULL);
+
+    #ifdef UNIT_INSIDE
     remove_CMA(&sfa30_sgp40_data, &temp_sfa, &hum_sfa, &hcho, &voc_sgp);
     remove_CMA(&sen5x_data_1, &pm1, &pm2p5, &hum_sen5x, NULL);
     remove_CMA(&sen5x_data_2, &temp_sen5x, &VOC_sen5x, &NOX, NULL);
     remove_CMA(&ads1115_data, &voltage, NULL, NULL, NULL);
     remove_CMA(&bme680_dat1, &bme680_t, &bme680_p, &bme680_h, NULL);
     remove_CMA(&bme680_dat2, &bme680_voc, NULL, NULL, NULL);
-    /*printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+    printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
            temp_sen5x,
            temp_bmp280,
            temp_sfa,
@@ -266,13 +273,33 @@ int main()
            hcho,
            pm1,
            pm2p5);
-  */
     float real_temp = mix_sensors({ temp_sen5x, temp_bmp280, bme680_t });
     float real_VOC = mix_sensors({ VOC_sen5x, voc_sgp, bme680_voc });
     float real_hum = mix_sensors({ hum_sen5x, bme680_h });
     float real_pressure = mix_sensors({ press, bme680_p });
     display_data(real_temp, real_hum, voltage, real_VOC, NOX, hcho, pm1);
     record_to_db(real_temp,real_VOC, voltage, real_hum, real_pressure, NOX, hcho, pm1);
+    #endif
+    #ifdef UNIT_OUTSIDE
+    remove_CMA(&light_data, &lux);
+    remove_CMA(&ppm_data, &pm1, &pm2p5, &pm10);
+    printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+           temp_bmp280,
+           humidity,
+           press,
+           lux,
+           pm1,
+           pm2p5,
+           pm10,
+           );
+    float real_temp = temp_bmp280;
+    float real_hum = humidity;
+    float real_pressure = press;
+    //record_to_db(real_temp,real_VOC, voltage, real_hum, real_pressure, NOX, hcho, pm1);
+
+    #endif
+
+
 
     if(loop++ > SAVE_EVERY_LOOP)
     {

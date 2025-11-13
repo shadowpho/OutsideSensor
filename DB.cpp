@@ -1,6 +1,5 @@
 #include "DB.h"
 
-#define UNIT_INSIDE 1
 
 #include <ctime>
 #include <iostream>
