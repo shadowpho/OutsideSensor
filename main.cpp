@@ -1,7 +1,5 @@
-#define UNIT_OUTSIDE
-//#define UNIT_INSIDE
-
-#define db_password PASSWORD
+#include "config.h"
+#define db_password PASSWORD5a
 
 #ifdef UNIT_OUTSIDE
 const char* DEVICEID = "103";
