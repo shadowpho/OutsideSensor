@@ -8,7 +8,7 @@ find_package(SQLite3)
 find_library(PQXX_LIB pqxx)
 find_library(PQ_LIB pq)
 file(GLOB SOURCE *.cpp BME680/*.c)
-file(GLOB_RECURSE BSEC_SOURCE BSEC/*.c)
+#file(GLOB_RECURSE BSEC_SOURCE BSEC/*.c)
 file(GLOB_RECURSE OLED_WAVESHARE_SOURCE OLED_Waveshare/lib/*.c)
 
 include_directories(${SQLITE3_INCLUDE_DIRS})

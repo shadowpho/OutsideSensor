@@ -71,6 +71,7 @@ void setup_PMS7003()
     {
         printf("error %d from tcsetattr", errno);
     }
+    printf("Finished opening PMS7003!\n");
 }
 
 static uint16_t get(uint8_t *buf, int idx)
