@@ -3,7 +3,7 @@
 
 #ifdef UNIT_OUTSIDE
 const char* DEVICEID = "103";
-const int COMMIT_EVERY_MS = 60 * 1000; //commit every minute
+const int CAPTURE_EVERY_MS = 60 * 1000; //commit every minute
 const int SAVE_EVERY_LOOP = 10;
 #endif
 
@@ -24,12 +24,17 @@ const int SAVE_EVERY_LOOP = 6*10;
 
 #include "ADS1115.h"
 #include "BMP280.h"
+#ifdef UNIT_INSIDE
 #include "BSECglue.h"
-#include "HDC2080.h"
-#include "PMS7003.h"
-#include "SEN5x.h"
 #include "SFA30x.h"
 #include "SGP40.h"
+#endif 
+
+#include "SEN5x.h"
+#include "HDC2080.h"
+#include "PMS7003.h"
+
+
 #include "VEML7700.h"
 #include "i2c_helper.h"
 
@@ -74,6 +79,7 @@ void temp_pressure_loop(CMA_Data* obj)
   }
 }
 
+#ifdef UNIT_INSIDE
 void sfa_sgp_loop(CMA_Data* obj)
 {
   while (1) {
@@ -120,6 +126,8 @@ void BME680_loop(CMA_Data* obj, CMA_Data* obj2)
     sleep_us(BSEC_desired_sleep_us());
   }
 }
+#endif
+
 #ifdef UNIT_OUTSIDE
 void light_loop(CMA_Data* obj)
 {
@@ -127,7 +135,7 @@ void light_loop(CMA_Data* obj)
     auto start = std::chrono::steady_clock::now();
     float lux;
     read_from_VEML7700(&lux);
-    add_to_CMA(obj, lux, 0, 0);
+    add_to_CMA(obj, lux, 0, 0,0);
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> diff = end - start;
     int sleep_time = 1000 - std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
@@ -141,7 +149,7 @@ void ppm_loop(CMA_Data* obj)
     auto start = std::chrono::steady_clock::now();
     uint16_t ppm10, ppm25, ppm01;
     read_from_PMS(&ppm10, &ppm25, &ppm10);
-    add_to_CMA(obj, (float)ppm10, (float)ppm25, (float)ppm01);
+    add_to_CMA(obj, (float)ppm10, (float)ppm25, (float)ppm01,0);
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> diff = end - start;
     int sleep_time = 300 - std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
@@ -279,8 +287,8 @@ int main()
     record_to_db(real_temp,real_VOC, voltage, real_hum, real_pressure, NOX, hcho, pm1);
     #endif
     #ifdef UNIT_OUTSIDE
-    remove_CMA(&light_data, &lux);
-    remove_CMA(&ppm_data, &pm1, &pm2p5, &pm10);
+    remove_CMA(&light_data, &lux,NULL,NULL,NULL);
+    remove_CMA(&ppm_data, &pm1, &pm2p5, &pm10,NULL);
     printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
            temp_bmp280,
            humidity,
@@ -288,7 +296,7 @@ int main()
            lux,
            pm1,
            pm2p5,
-           pm10,
+           pm10
            );
     float real_temp = temp_bmp280;
     float real_hum = humidity;

@@ -1,6 +1,6 @@
 #include "DB.h"
 
-
+#include "config.h"
 #include <ctime>
 #include <iostream>
 #include <pqxx/pqxx>
