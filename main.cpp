@@ -74,7 +74,7 @@ void temp_pressure_loop(CMA_Data* obj)
 #endif
     read_from_BMP280(&t2, &pressure);
     if (t1 == 0) t1 = t2;
-    add_to_CMA(obj, (t1 + t2) / 2, humidity, pressure, 0);
+    add_to_CMA(obj, t1, humidity, pressure, t2);
     std::this_thread::sleep_until(start + 250ms);
   }
 }
@@ -244,7 +244,7 @@ int main()
 
   float voltage, lux;
   float pm10, pm1, pm2p5, hum_sen5x, temp_sen5x, VOC_sen5x, NOX;
-  float temp_bmp280, press, humidity;
+  float temp_bmp280, temp_hdc2080, press, humidity;
   float temp_sfa, hum_sfa, hcho, voc_sgp;
   float bme680_t, bme680_p, bme680_h, bme680_voc;
 
@@ -252,7 +252,7 @@ int main()
   while (1) {
 
     sleep_ms(CAPTURE_EVERY_MS);
-    remove_CMA(&bmp280_data, &temp_bmp280, &humidity, &press, NULL);
+    remove_CMA(&bmp280_data, &temp_bmp280, &humidity, &press, &temp_hdc2080);
 
     #ifdef UNIT_INSIDE
     remove_CMA(&sfa30_sgp40_data, &temp_sfa, &hum_sfa, &hcho, &voc_sgp);
@@ -289,8 +289,9 @@ int main()
     #ifdef UNIT_OUTSIDE
     remove_CMA(&light_data, &lux,NULL,NULL,NULL);
     remove_CMA(&ppm_data, &pm1, &pm2p5, &pm10,NULL);
-    printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+    printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
            temp_bmp280,
+           temp_hdc2080,
            humidity,
            press,
            lux,
