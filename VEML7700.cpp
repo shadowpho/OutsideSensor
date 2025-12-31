@@ -7,7 +7,7 @@
 #include "i2c_helper.h"
 
 #define VEML_CONF_REGISTER 0x0
-#define VEML_PS 0x1
+#define VEML_PS 0x3
 #define VEML_ALS_Data 0x4
 #define VEML_White_Data 0x5
 #define VEML_INT 0x6
